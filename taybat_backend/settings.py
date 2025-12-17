@@ -37,13 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Third-party apps
     'rest_framework',
+    # my apps
     'users',
     'drivers',
     'restaurants',
     'orders',
     'payments',
+    # Third-party apps
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -131,3 +133,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+CSRF_TRUSTED_ORIGINS = [
+    'chrome-extension://ehafadccdcdedbhcbddihehiodgcddpl',
+]
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Taybat API",
+    "DESCRIPTION": "Backend API for Taybat (Food, Taxi, Shipping).",
+    "VERSION": "1.0.0",
+    # Optional but recommended:
+    "SERVE_INCLUDE_SCHEMA": False,
+}
