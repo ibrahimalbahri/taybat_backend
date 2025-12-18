@@ -24,6 +24,15 @@ class CustomerFoodCheckoutView(APIView):
 
         restaurant = Restaurant.objects.get(id=data["restaurant_id"])
 
+        # Block checkout for inactive restaurants
+        from restaurants.models import RestaurantStatus
+
+        if restaurant.status != RestaurantStatus.ACTIVE:
+            return Response(
+                {"detail": "Restaurant is not accepting orders at the moment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         pickup_address = Address.objects.get(id=data["pickup_address_id"], user=request.user)
         dropoff_address = Address.objects.get(id=data["dropoff_address_id"], user=request.user)
 

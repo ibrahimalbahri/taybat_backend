@@ -16,6 +16,17 @@ from restaurants.api.seller_views import (
     SellerItemDetailView,
     SellerItemStatsView,
 )
+from restaurants.api.admin_restaurant_views import (
+    AdminRestaurantActivateView,
+    AdminRestaurantDeactivateView,
+)
+from restaurants.api.admin_coupon_views import (
+    AdminCouponListView,
+    AdminCouponDetailView,
+    AdminCouponDisableView,
+    AdminCouponEnableView,
+    AdminCouponUsageView,
+)
 
 
 urlpatterns = [
@@ -80,5 +91,42 @@ urlpatterns = [
         "seller/items/<int:pk>/stats/",
         SellerItemStatsView.as_view(),
         name="seller-item-stats",
+    ),
+    # Admin restaurant controls
+    path(
+        "admin/restaurants/<int:pk>/activate/",
+        AdminRestaurantActivateView.as_view(),
+        name="admin-restaurant-activate",
+    ),
+    path(
+        "admin/restaurants/<int:pk>/deactivate/",
+        AdminRestaurantDeactivateView.as_view(),
+        name="admin-restaurant-deactivate",
+    ),
+    # Admin coupon oversight + audit
+    path(
+        "admin/coupons/",
+        AdminCouponListView.as_view(),
+        name="admin-coupons",
+    ),
+    path(
+        "admin/coupons/<int:pk>/",
+        AdminCouponDetailView.as_view(),
+        name="admin-coupon-detail",
+    ),
+    path(
+        "admin/coupons/<int:pk>/disable/",
+        AdminCouponDisableView.as_view(),
+        name="admin-coupon-disable",
+    ),
+    path(
+        "admin/coupons/<int:pk>/enable/",
+        AdminCouponEnableView.as_view(),
+        name="admin-coupon-enable",
+    ),
+    path(
+        "admin/coupons/<int:pk>/usage/",
+        AdminCouponUsageView.as_view(),
+        name="admin-coupon-usage",
     ),
 ]

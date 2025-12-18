@@ -14,6 +14,12 @@ from orders.api.customer_service_checkout_views import (
     ShippingCheckoutView,
 )
 from orders.api.seller_manual_order_views import SellerManualOrderCreateView
+from orders.api.admin_order_views import (
+    AdminOrderListView,
+    AdminOrderExportExcelView,
+    AdminOrderExportPdfView,
+    AdminOrderStatusHistoryView,
+)
 
 
 urlpatterns = [
@@ -54,5 +60,26 @@ urlpatterns = [
         "seller/orders/manual/",
         SellerManualOrderCreateView.as_view(),
         name="seller-manual-order-create",
+    ),
+    # Admin order dashboard + exports
+    path(
+        "admin/orders/",
+        AdminOrderListView.as_view(),
+        name="admin-orders",
+    ),
+    path(
+        "admin/orders/export/excel/",
+        AdminOrderExportExcelView.as_view(),
+        name="admin-orders-export-excel",
+    ),
+    path(
+        "admin/orders/export/pdf/",
+        AdminOrderExportPdfView.as_view(),
+        name="admin-orders-export-pdf",
+    ),
+    path(
+        "admin/orders/<int:pk>/status-history/",
+        AdminOrderStatusHistoryView.as_view(),
+        name="admin-order-status-history",
     ),
 ]
