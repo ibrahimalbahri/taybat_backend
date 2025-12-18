@@ -13,10 +13,6 @@ from orders.models import Order, OrderItem, OrderType, OrderStatus, OrderStatusH
 from orders.api.serializers import FoodCheckoutSerializer, OrderOutputSerializer
 from restaurants.services.coupons import apply_coupon_to_order, CouponError
 
-# TODO: remove this once we have a proper CSRF protection
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-@method_decorator(csrf_exempt, name='dispatch')
 class CustomerFoodCheckoutView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
 

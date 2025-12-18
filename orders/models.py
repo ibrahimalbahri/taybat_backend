@@ -19,6 +19,11 @@ class OrderStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
     CANCELLED = "CANCELLED", "Cancelled"
 
+class VehicleType(models.TextChoices):
+    BIKE = "BIKE", "Bike"
+    MOTOR = "MOTOR", "Motorcycle"
+    CAR = "CAR", "Car"
+    VAN = "VAN", "Van"
 
 class Order(models.Model):
     """
@@ -107,7 +112,7 @@ class Order(models.Model):
         blank=True,
         help_text="Estimated time in seconds (or your chosen unit) calculated by pricing engine",
     )
-
+    requested_vehicle_type = models.CharField(max_length=20, choices=VehicleType.choices, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
