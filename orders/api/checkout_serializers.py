@@ -19,6 +19,9 @@ class TaxiCheckoutSerializer(serializers.Serializer):
         required=False,
         default=Decimal("0.00"),
     )
+    payment_method_id = serializers.IntegerField()
+    idempotency_key = serializers.CharField(required=False, allow_blank=True)
+
 
 
 class ShippingPackageInputSerializer(serializers.Serializer):
@@ -46,5 +49,8 @@ class ShippingCheckoutSerializer(serializers.Serializer):
         default=Decimal("0.00"),
     )
     package = ShippingPackageInputSerializer()
+    payment_method_id = serializers.IntegerField()
+    idempotency_key = serializers.CharField(required=False, allow_blank=True)
+
 
 

@@ -22,6 +22,8 @@ from orders.api.checkout_serializers import (
 )
 from orders.api.serializers import OrderOutputSerializer
 from orders.services.pricing import calculate_quote
+from payments.models import PaymentMethod
+from payments.services.payment_service import PaymentService, PaymentError
 
 
 class TaxiCheckoutView(APIView):
@@ -92,6 +94,35 @@ class TaxiCheckoutView(APIView):
             tip=tip,
             total_amount=quote.total_amount,
         )
+        # Capture payment (PCI-safe tokenized method)
+        try:
+            payment_method = PaymentMethod.objects.get(
+                id=data["payment_method_id"],
+                user=request.user,
+            )
+        except PaymentMethod.DoesNotExist:
+            return Response(
+                {"detail": "Payment method not found or does not belong to you."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        idempotency_key = (data.get("idempotency_key") or "").strip() or None
+
+        try:
+            PaymentService.capture_order_payment(
+                order=order,
+                user=request.user,
+                payment_method=payment_method,
+                currency="EUR",
+                idempotency_key=idempotency_key,
+            )
+        except PaymentError as e:
+            # The whole view is @transaction.atomic, so raising/returning after failure is safe.
+            # If you prefer, you can mark the order as PAYMENT_FAILED and save history here.
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Record initial status history
         OrderStatusHistory.objects.create(order=order, status=order.status)
@@ -172,7 +203,36 @@ class ShippingCheckoutView(APIView):
             tip=tip,
             total_amount=quote.total_amount,
         )
+        # Capture payment (PCI-safe tokenized method)
+        try:
+            payment_method = PaymentMethod.objects.get(
+                id=data["payment_method_id"],
+                user=request.user,
+            )
+        except PaymentMethod.DoesNotExist:
+            return Response(
+                {"detail": "Payment method not found or does not belong to you."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
+        idempotency_key = (data.get("idempotency_key") or "").strip() or None
+
+        try:
+            PaymentService.capture_order_payment(
+                order=order,
+                user=request.user,
+                payment_method=payment_method,
+                currency="EUR",
+                idempotency_key=idempotency_key,
+            )
+        except PaymentError as e:
+            # The whole view is @transaction.atomic, so raising/returning after failure is safe.
+            # If you prefer, you can mark the order as PAYMENT_FAILED and save history here.
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
         # Create shipping package row
         ShippingPackage.objects.create(
             order=order,

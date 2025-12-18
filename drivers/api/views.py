@@ -17,7 +17,7 @@ from orders.models import (
     OrderDriverSuggestion,
     OrderType,
 )
-
+from loyalty.services.loyalty_service import LoyaltyService
 
 class DriverOnlineToggleView(APIView):
     """
@@ -344,11 +344,13 @@ class DriverUpdateOrderStatusView(APIView):
             order=order,
             status=new_status
         )
+        if new_status == OrderStatus.COMPLETED:
+            LoyaltyService.issue_for_order(order=order)
 
         return Response(
             {
                 "message": f"Order status updated from {old_status} to {new_status}",
-                "order_id": order.id,
+                "order_id": order.pk,
                 "status": order.status,
             },
             status=status.HTTP_200_OK
