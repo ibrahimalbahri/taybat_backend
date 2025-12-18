@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'restaurants',
     'orders',
     'payments',
+    'loyalty',
     # Third-party apps
     "drf_spectacular",
 ]
@@ -158,3 +159,7 @@ SPECTACULAR_SETTINGS = {
     # Optional but recommended:
     "SERVE_INCLUDE_SCHEMA": False,
 }
+# settings.py
+LOYALTY_POINTS_PER_EUR = 1
+LOYALTY_ONLY_FOOD = False
+LOYALTY_ISSUE_ON_STATUS = "COMPLETED"
