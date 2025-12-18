@@ -42,6 +42,11 @@ class DriverProfile(models.Model):
     accepts_shipping = models.BooleanField(default=False)
     accepts_taxi = models.BooleanField(default=False)
 
+    is_online = models.BooleanField(
+        default=False,
+        help_text="Whether the driver is currently online and available for orders",
+    )
+
     driving_license = models.FileField(
         upload_to="drivers/licenses/",
         null=True,

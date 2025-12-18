@@ -51,6 +51,8 @@ class OrderOutputSerializer(serializers.ModelSerializer):
             "total_amount",
             "pickup_address",
             "dropoff_address",
+            "requested_vehicle_type",
+            "requested_delivery_type",
             "created_at",
             "items",
         ]

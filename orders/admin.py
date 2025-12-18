@@ -26,6 +26,8 @@ class OrderAdmin(admin.ModelAdmin):
         "id",
         "order_type",
         "status",
+        "requested_vehicle_type",
+        "requested_delivery_type",
         "customer",
         "driver",
         "restaurant",

@@ -21,6 +21,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("restaurants.api.urls")),
     path("api/", include("orders.api.urls")),
+    path("api/", include("drivers.api.urls")),
     # OpenAPI schema:
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Swagger UI:
