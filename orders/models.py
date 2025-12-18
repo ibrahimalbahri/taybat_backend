@@ -242,3 +242,41 @@ class OrderStatusHistory(models.Model):
 
     def __str__(self) -> str:
         return f"OrderStatusHistory(order={self.order_id}, status={self.status})"
+
+
+class ManualOrder(models.Model):
+    """
+    Manual orders created by sellers (restaurant staff).
+
+    Stores a link to the real Order plus the raw scanned form data
+    captured from the seller app (e.g. QR / paper form).
+    """
+
+    staff_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="manual_orders",
+    )
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="manual_order_record",
+    )
+
+    scanned_form_data = models.JSONField(
+        help_text="Raw scanned payload from seller app (manual order form).",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Manual Order"
+        verbose_name_plural = "Manual Orders"
+        indexes = [
+            models.Index(fields=["staff_user", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"ManualOrder(order={self.order_id}, staff_user={self.staff_user_id})"
+
