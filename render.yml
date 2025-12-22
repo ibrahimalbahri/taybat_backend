@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: taybat-backend
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn taybat_backend.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: taybat_backend.settings
+      - key: DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taybat-db
+          property: connectionString
+
+databases:
+  - name: taybat-db
+    plan: free
