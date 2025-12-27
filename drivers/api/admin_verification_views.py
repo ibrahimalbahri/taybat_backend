@@ -70,7 +70,7 @@ class AdminDriverVerificationQueueView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self): # type: ignore
         return DriverProfile.objects.filter(status="PENDING").select_related("user")
 
 
