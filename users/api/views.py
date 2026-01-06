@@ -52,7 +52,7 @@ class OtpRequestView(generics.GenericAPIView):
         user.otp_code_created_at = timezone.now()
         user.save(update_fields=["otp_code_hash", "otp_code_created_at"])
 
-        response_data = {"detail": "OTP sent."}
+        response_data = {"detail": "OTP sent", "otp": code}
         if settings.DEBUG:
             response_data["otp"] = code
         return Response(response_data, status=status.HTTP_200_OK)
