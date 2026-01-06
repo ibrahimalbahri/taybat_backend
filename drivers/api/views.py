@@ -193,7 +193,7 @@ class DriverAcceptOrderView(APIView):
         return Response(
             {
                 "message": "Order accepted successfully",
-                "order_id": order.id,
+                "order_id": order.pk,
                 "status": order.status,
             },
             status=status.HTTP_200_OK

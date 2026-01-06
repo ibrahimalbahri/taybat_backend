@@ -56,7 +56,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=UserRole.choices,
         default=UserRole.CUSTOMER,
     )
-    otp_code_hash = models.CharField(max_length=10, null=True, blank=True)
+    otp_code_hash = models.CharField(max_length=128, null=True, blank=True)
+    otp_code_created_at = models.DateTimeField(null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
