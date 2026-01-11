@@ -9,12 +9,8 @@ from typing import Optional
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 
-from drivers.models import (
-    DriverProfile,
-    DriverStatus,
-    DriverVerification,
-    DriverVerificationStatus,
-)
+from drivers.models import DriverVerification, DriverVerificationStatus
+from users.models import DriverProfile, DriverStatus
 from users.models import User
 
 
@@ -84,4 +80,3 @@ def verify_driver(
     )
 
     return DriverVerificationResult(verification=verification, profile=profile)
-

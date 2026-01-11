@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from drivers.models import DriverStatus
+from users.models import DriverStatus
 
 
 class IsCustomer(BasePermission):

@@ -4,8 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 from orders.models import Order, OrderStatus
-from drivers.models import DriverProfile, VehicleType
-from users.models import User
+from users.models import VehicleType, User
 
 
 class DriverOnlineStatusSerializer(serializers.Serializer):
@@ -87,57 +86,5 @@ class DriverCreateSerializer(serializers.Serializer):
 
     def validate_phone(self, value: str) -> str:
         if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("A user with this phone already exists.")
-        return value
-
-
-class DriverProfileSerializer(serializers.ModelSerializer):
-    """Serializer for driver profile details."""
-    email = serializers.EmailField(source="user.email", read_only=True)
-    name = serializers.CharField(source="user.name", read_only=True)
-    phone = serializers.CharField(source="user.phone", read_only=True)
-    age = serializers.IntegerField(source="user.age", read_only=True)
-    roles = serializers.SerializerMethodField()
-
-    class Meta:
-        model = DriverProfile
-        fields = [
-            "id",
-            "email",
-            "name",
-            "phone",
-            "age",
-            "roles",
-            "status",
-            "vehicle_type",
-            "accepts_food",
-            "accepts_shipping",
-            "accepts_taxi",
-            "is_online",
-            "driving_license",
-            "id_document",
-            "other_documents",
-            "created_at",
-        ]
-
-    def get_roles(self, obj: DriverProfile) -> list[str]:
-        return list(obj.user.roles.values_list("name", flat=True))
-
-
-class DriverProfileUpdateSerializer(serializers.Serializer):
-    name = serializers.CharField(required=False)
-    phone = serializers.CharField(required=False)
-    age = serializers.IntegerField(required=False, allow_null=True)
-    vehicle_type = serializers.ChoiceField(choices=VehicleType.choices, required=False)
-    accepts_food = serializers.BooleanField(required=False)
-    accepts_shipping = serializers.BooleanField(required=False)
-    accepts_taxi = serializers.BooleanField(required=False)
-    driving_license = serializers.FileField(required=False, allow_null=True)
-    id_document = serializers.FileField(required=False, allow_null=True)
-    other_documents = serializers.FileField(required=False, allow_null=True)
-
-    def validate_phone(self, value: str) -> str:
-        user = self.context["request"].user
-        if User.objects.filter(phone=value).exclude(id=user.id).exists():
             raise serializers.ValidationError("A user with this phone already exists.")
         return value

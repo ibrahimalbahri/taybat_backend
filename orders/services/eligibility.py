@@ -8,7 +8,7 @@ NOTE: This is v1, kept intentionally simple; more rules can be added later.
 """
 from typing import Any
 
-from drivers.models import DriverProfile
+from users.models import DriverProfile
 from orders.models import Order, OrderType
 
 
@@ -56,5 +56,4 @@ def is_driver_eligible_for_order(driver_profile: DriverProfile, order: Order) ->
         return False
 
     return True
-
 

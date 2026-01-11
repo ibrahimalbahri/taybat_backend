@@ -10,7 +10,8 @@ from rest_framework.views import APIView
 from rest_framework import generics
 
 from users.permissions import IsAdmin
-from drivers.models import DriverProfile, DriverVerification, DriverVerificationStatus
+from drivers.models import DriverVerification, DriverVerificationStatus
+from users.models import DriverProfile
 from drivers.services.verification import (
     verify_driver,
     DriverAlreadyVerified,

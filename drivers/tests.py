@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from drivers.models import DriverProfile, DriverStatus, VehicleType
+from users.models import DriverProfile, DriverStatus, VehicleType
 from orders.models import Order, OrderDriverSuggestion, OrderStatus, OrderType
 from users.models import Address, CustomerProfile, User
 

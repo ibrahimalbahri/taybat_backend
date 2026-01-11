@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 
-from users.models import User
+from users.models import DriverProfile, User
 from users.permissions import IsAdmin
 
 
@@ -62,7 +62,6 @@ class RoleMigrationBackfillTests(TestCase):
         CustomerProfile = apps.get_model("users", "CustomerProfile")
         SellerProfile = apps.get_model("users", "SellerProfile")
         AdminProfile = apps.get_model("users", "AdminProfile")
-        from drivers.models import DriverProfile
 
         with connection.cursor() as cursor:
             cursor.execute("PRAGMA table_info(users_user)")

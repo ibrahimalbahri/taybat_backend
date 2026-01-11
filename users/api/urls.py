@@ -7,6 +7,7 @@ from users.api.views import (
     OtpVerifyView,
     CustomerProfileUpdateView,
     SellerProfileUpdateView,
+    DriverProfileUpdateView,
 )
 
 urlpatterns = [
@@ -18,4 +19,5 @@ urlpatterns = [
     path("auth/otp/verify/", OtpVerifyView.as_view(), name="otp_verify"),
     path("customer/profile/", CustomerProfileUpdateView.as_view(), name="customer-profile-update"),
     path("seller/profile/", SellerProfileUpdateView.as_view(), name="seller-profile-update"),
+    path("driver/profile/", DriverProfileUpdateView.as_view(), name="driver-profile-update"),
 ]

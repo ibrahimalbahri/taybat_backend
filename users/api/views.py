@@ -19,9 +19,11 @@ from users.api.serializers import (
     OtpVerifySerializer,
     CustomerProfileUpdateSerializer,
     SellerProfileUpdateSerializer,
+    DriverProfileUpdateSerializer,
+    DriverProfileSerializer,
 )
-from users.models import CustomerProfile, User
-from users.permissions import IsCustomer, IsSeller
+from users.models import CustomerProfile, DriverProfile, User
+from users.permissions import IsCustomer, IsSeller, IsDriver
 from taybat_backend.typing import get_authenticated_user
 
 
@@ -150,5 +152,61 @@ class SellerProfileUpdateView(generics.GenericAPIView):
         user.save(update_fields=list(data.keys()))
         return Response(
             {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_200_OK,
+        )
+
+
+class DriverProfileUpdateView(generics.GenericAPIView):
+    permission_classes = [IsDriver]
+    serializer_class = DriverProfileUpdateSerializer
+
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_fields = {"name", "phone", "age"}
+        profile_fields = {
+            "vehicle_type",
+            "accepts_food",
+            "accepts_shipping",
+            "accepts_taxi",
+            "driving_license",
+            "id_document",
+            "other_documents",
+        }
+
+        user_update_fields: list[str] = []
+        profile_update_fields: list[str] = []
+
+        for field in user_fields:
+            if field in data:
+                setattr(user, field, data[field])
+                user_update_fields.append(field)
+
+        for field in profile_fields:
+            if field in data:
+                setattr(profile, field, data[field])
+                profile_update_fields.append(field)
+
+        if user_update_fields:
+            user.save(update_fields=user_update_fields)
+        if profile_update_fields:
+            profile.save(update_fields=profile_update_fields)
+
+        return Response(
+            DriverProfileSerializer(profile).data,
             status=status.HTTP_200_OK,
         )
