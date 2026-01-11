@@ -3,7 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
-from users.models import DriverProfile, User, VehicleType
+from users.models import Address, DriverProfile, User, VehicleType
 
 
 class OtpRequestSerializer(serializers.Serializer):
@@ -102,3 +102,37 @@ class DriverProfileUpdateSerializer(serializers.Serializer):
         if User.objects.filter(phone=value).exclude(id=user.id).exists():
             raise serializers.ValidationError("A user with this phone already exists.")
         return value
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            "id",
+            "label",
+            "lat",
+            "lng",
+            "full_address",
+            "street_name",
+            "house_number",
+            "city",
+            "postal_code",
+            "country",
+            "created_at",
+        ]
+
+
+class AddressCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            "label",
+            "lat",
+            "lng",
+            "full_address",
+            "street_name",
+            "house_number",
+            "city",
+            "postal_code",
+            "country",
+        ]

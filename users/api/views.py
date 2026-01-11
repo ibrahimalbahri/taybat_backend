@@ -21,9 +21,11 @@ from users.api.serializers import (
     SellerProfileUpdateSerializer,
     DriverProfileUpdateSerializer,
     DriverProfileSerializer,
+    AddressSerializer,
+    AddressCreateUpdateSerializer,
 )
-from users.models import CustomerProfile, DriverProfile, User
-from users.permissions import IsCustomer, IsSeller, IsDriver
+from users.models import Address, CustomerProfile, DriverProfile, User
+from users.permissions import IsCustomer, IsSeller, IsDriver, IsAuthenticated
 from taybat_backend.typing import get_authenticated_user
 
 
@@ -210,3 +212,35 @@ class DriverProfileUpdateView(generics.GenericAPIView):
             DriverProfileSerializer(profile).data,
             status=status.HTTP_200_OK,
         )
+
+
+class AddressListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AddressSerializer
+
+    def get_queryset(self):
+        user = get_authenticated_user(self.request)
+        return Address.objects.filter(user=user).order_by("-created_at")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return AddressCreateUpdateSerializer
+        return AddressSerializer
+
+    def perform_create(self, serializer):
+        user = get_authenticated_user(self.request)
+        serializer.save(user=user)
+
+
+class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AddressSerializer
+
+    def get_queryset(self):
+        user = get_authenticated_user(self.request)
+        return Address.objects.filter(user=user)
+
+    def get_serializer_class(self):
+        if self.request.method in {"PUT", "PATCH"}:
+            return AddressCreateUpdateSerializer
+        return AddressSerializer

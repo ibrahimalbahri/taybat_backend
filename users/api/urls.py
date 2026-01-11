@@ -8,6 +8,8 @@ from users.api.views import (
     CustomerProfileUpdateView,
     SellerProfileUpdateView,
     DriverProfileUpdateView,
+    AddressListCreateView,
+    AddressDetailView,
 )
 
 urlpatterns = [
@@ -20,4 +22,6 @@ urlpatterns = [
     path("customer/profile/", CustomerProfileUpdateView.as_view(), name="customer-profile-update"),
     path("seller/profile/", SellerProfileUpdateView.as_view(), name="seller-profile-update"),
     path("driver/profile/", DriverProfileUpdateView.as_view(), name="driver-profile-update"),
+    path("addresses/", AddressListCreateView.as_view(), name="address-list-create"),
+    path("addresses/<int:pk>/", AddressDetailView.as_view(), name="address-detail"),
 ]
