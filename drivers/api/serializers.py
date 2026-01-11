@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from orders.models import Order, OrderStatus
-from drivers.models import DriverProfile
+from drivers.models import DriverProfile, VehicleType
+from users.models import User
 
 
 class DriverOnlineStatusSerializer(serializers.Serializer):
@@ -60,3 +61,57 @@ class OrderStatusUpdateSerializer(serializers.Serializer):
         OrderStatus.COMPLETED,
     ])
 
+
+class DriverCreateSerializer(serializers.Serializer):
+    """Serializer for creating a driver user + profile."""
+    name = serializers.CharField()
+    email = serializers.EmailField()
+    phone = serializers.CharField()
+    age = serializers.IntegerField(required=False, allow_null=True)
+    vehicle_type = serializers.ChoiceField(choices=VehicleType.choices)
+    accepts_food = serializers.BooleanField(required=False, default=False)
+    accepts_shipping = serializers.BooleanField(required=False, default=False)
+    accepts_taxi = serializers.BooleanField(required=False, default=False)
+    driving_license = serializers.FileField(required=False, allow_null=True)
+    id_document = serializers.FileField(required=False, allow_null=True)
+    other_documents = serializers.FileField(required=False, allow_null=True)
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_phone(self, value):
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("A user with this phone already exists.")
+        return value
+
+
+class DriverProfileSerializer(serializers.ModelSerializer):
+    """Serializer for driver profile details."""
+    email = serializers.EmailField(source="user.email", read_only=True)
+    name = serializers.CharField(source="user.name", read_only=True)
+    phone = serializers.CharField(source="user.phone", read_only=True)
+    age = serializers.IntegerField(source="user.age", read_only=True)
+    role = serializers.CharField(source="user.role", read_only=True)
+
+    class Meta:
+        model = DriverProfile
+        fields = [
+            "id",
+            "email",
+            "name",
+            "phone",
+            "age",
+            "role",
+            "status",
+            "vehicle_type",
+            "accepts_food",
+            "accepts_shipping",
+            "accepts_taxi",
+            "is_online",
+            "driving_license",
+            "id_document",
+            "other_documents",
+            "created_at",
+        ]

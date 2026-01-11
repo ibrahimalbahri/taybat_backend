@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 
-from users.permissions import IsDriver
+from users.permissions import IsDriver, IsAdmin
+from users.models import User, UserRole
 from drivers.models import DriverProfile
 from drivers.api import serializers
 from orders.models import (
@@ -18,6 +19,46 @@ from orders.models import (
     OrderType,
 )
 from loyalty.services.loyalty_service import LoyaltyService
+
+
+class DriverCreateView(APIView):
+    """
+    Create a driver user and profile (admin-only).
+    """
+    permission_classes = [IsAuthenticated, IsAdmin | IsDriver]
+
+    @extend_schema(
+        request=serializers.DriverCreateSerializer,
+        responses={201: serializers.DriverProfileSerializer},
+        description="Create a driver user and profile.",
+    )
+    @transaction.atomic
+    def post(self, request):
+        serializer = serializers.DriverCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        
+        user, _created = User.objects.get_or_create_user(
+            email=data["email"],
+            name=data["name"],
+            phone=data["phone"],
+            age=data.get("age"),
+            role=UserRole.DRIVER,
+        )
+
+        profile = DriverProfile.objects.create(
+            user=user,
+            vehicle_type=data["vehicle_type"],
+            accepts_food=data.get("accepts_food", False),
+            accepts_shipping=data.get("accepts_shipping", False),
+            accepts_taxi=data.get("accepts_taxi", False),
+            driving_license=data.get("driving_license"),
+            id_document=data.get("id_document"),
+            other_documents=data.get("other_documents"),
+        )
+
+        response_serializer = serializers.DriverProfileSerializer(profile)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 class DriverOnlineToggleView(APIView):
     """
@@ -355,4 +396,3 @@ class DriverUpdateOrderStatusView(APIView):
             },
             status=status.HTTP_200_OK
         )
-

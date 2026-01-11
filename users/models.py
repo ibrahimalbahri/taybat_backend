@@ -28,6 +28,22 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+    def get_or_create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("The Email field must be set")
+
+        email = self.normalize_email(email)
+        try:
+            return self.get(email=email), False
+        except self.model.DoesNotExist:
+            user = self.model(email=email, **extra_fields)
+            if password:
+                user.set_password(password)
+            else:
+                user.set_unusable_password()
+            user.save(using=self._db)
+            return user, True
+
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -108,7 +124,11 @@ class Address(models.Model):
     )
 
     full_address = models.TextField()
-
+    street_name = models.CharField(max_length=255)
+    house_number = models.CharField(max_length=50)
+    city = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

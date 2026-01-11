@@ -1,6 +1,7 @@
 from django.urls import path
 
 from drivers.api.views import (
+    DriverCreateView,
     DriverOnlineToggleView,
     DriverSuggestedOrdersView,
     DriverAcceptOrderView,
@@ -41,6 +42,11 @@ urlpatterns = [
         DriverUpdateOrderStatusView.as_view(),
         name="driver-update-order-status",
     ),
+    path(
+        "drivers/",
+        DriverCreateView.as_view(),
+        name="admin-driver-create",
+    ),
     # Admin driver verification endpoints
     path(
         "admin/drivers/verification-queue/",
@@ -58,4 +64,3 @@ urlpatterns = [
         name="admin-driver-verification-history",
     ),
 ]
-
