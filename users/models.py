@@ -242,11 +242,11 @@ class Address(models.Model):
     )
 
     full_address = models.TextField()
-    street_name = models.CharField(max_length=255)
-    house_number = models.CharField(max_length=50)
-    city = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20)
-    country = models.CharField(max_length=100)
+    street_name = models.CharField(max_length=255, null=True, blank=True)
+    house_number = models.CharField(max_length=50, null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    country = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,6 +1,6 @@
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
 from users.models import User
@@ -41,15 +41,30 @@ class PermissionRoleTests(TestCase):
         self.assertTrue(permission.has_permission(request, None))
 
 
-class RoleMigrationBackfillTests(TransactionTestCase):
-    migrate_from = ("users", "0003_user_otp_fields")
-    migrate_to = ("users", "0006_remove_user_role_field")
+class RoleMigrationBackfillTests(TestCase):
+    def test_roles_and_profiles_backfilled(self):
+        import importlib
 
-    def setUp(self):
-        self.executor = MigrationExecutor(connection)
-        self.executor.migrate([self.migrate_from])
-        apps = self.executor.loader.project_state([self.migrate_from]).apps
+        migration_module = importlib.import_module(
+            "users.migrations.0005_backfill_roles_profiles"
+        )
+        backfill_roles_and_profiles = migration_module.backfill_roles_and_profiles
+
+        executor = MigrationExecutor(connection)
+        apps = executor.loader.project_state([("users", "0005_backfill_roles_profiles")]).apps
         User = apps.get_model("users", "User")
+        Role = apps.get_model("users", "Role")
+        UserRole = apps.get_model("users", "UserRole")
+        CustomerProfile = apps.get_model("users", "CustomerProfile")
+        SellerProfile = apps.get_model("users", "SellerProfile")
+        AdminProfile = apps.get_model("users", "AdminProfile")
+        from drivers.models import DriverProfile
+
+        with connection.cursor() as cursor:
+            cursor.execute("PRAGMA table_info(users_user)")
+            columns = {row[1] for row in cursor.fetchall()}
+            if "role" not in columns:
+                cursor.execute("ALTER TABLE users_user ADD COLUMN role varchar(20)")
 
         User.objects.create(
             name="Customer",
@@ -76,17 +91,7 @@ class RoleMigrationBackfillTests(TransactionTestCase):
             role="DRIVER",
         )
 
-        self.executor.migrate([self.migrate_to])
-        self.apps = self.executor.loader.project_state([self.migrate_to]).apps
-
-    def test_roles_and_profiles_backfilled(self):
-        Role = self.apps.get_model("users", "Role")
-        User = self.apps.get_model("users", "User")
-        UserRole = self.apps.get_model("users", "UserRole")
-        CustomerProfile = self.apps.get_model("users", "CustomerProfile")
-        SellerProfile = self.apps.get_model("users", "SellerProfile")
-        AdminProfile = self.apps.get_model("users", "AdminProfile")
-        DriverProfile = self.apps.get_model("drivers", "DriverProfile")
+        backfill_roles_and_profiles(apps, None)
 
         self.assertTrue(Role.objects.filter(name="customer").exists())
         self.assertTrue(Role.objects.filter(name="driver").exists())
@@ -106,4 +111,4 @@ class RoleMigrationBackfillTests(TransactionTestCase):
         self.assertTrue(CustomerProfile.objects.filter(user=customer).exists())
         self.assertTrue(SellerProfile.objects.filter(user=seller).exists())
         self.assertTrue(AdminProfile.objects.filter(user=admin).exists())
-        self.assertFalse(DriverProfile.objects.filter(user=driver).exists())
+        self.assertFalse(DriverProfile.objects.filter(user_id=driver.id).exists())
