@@ -9,7 +9,7 @@ class UserRole(models.TextChoices):
     ADMIN = "ADMIN", "Admin"
 
 
-class UserManager(BaseUserManager):
+class UserManager(BaseUserManager["User"]):
     """
     Custom user manager that uses email as the unique identifier.
     """
