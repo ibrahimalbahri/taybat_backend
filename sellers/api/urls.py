@@ -16,6 +16,10 @@ from sellers.api.seller_views import (
     SellerItemDetailView,
     SellerItemStatsView,
 )
+from sellers.api.seller_coupon_views import (
+    SellerCouponCreateView,
+    SellerCouponUpdateView,
+)
 from sellers.api.admin_restaurant_views import (
     AdminRestaurantActivateView,
     AdminRestaurantDeactivateView,
@@ -91,6 +95,16 @@ urlpatterns = [
         "seller/items/<int:pk>/stats/",
         SellerItemStatsView.as_view(),
         name="seller-item-stats",
+    ),
+    path(
+        "seller/coupons/",
+        SellerCouponCreateView.as_view(),
+        name="seller-coupon-create",
+    ),
+    path(
+        "seller/coupons/<int:pk>/",
+        SellerCouponUpdateView.as_view(),
+        name="seller-coupon-update",
     ),
     # Admin restaurant controls
     path(

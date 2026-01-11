@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from sellers.models import Category, Item
+from sellers.models import Category, Item, Coupon
 
 
 class SellerCategorySerializer(serializers.ModelSerializer):
@@ -33,6 +33,63 @@ class SellerItemSerializer(serializers.ModelSerializer):
             "customization_details",
             "view_order",
             "is_available",
+        ]
+
+
+class SellerCouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = [
+            "id",
+            "restaurant",
+            "title",
+            "description",
+            "code",
+            "percentage",
+            "min_price",
+            "max_total_users",
+            "max_per_customer",
+            "start_date",
+            "end_date",
+            "is_active",
+            "created_at",
+        ]
+
+
+class SellerCouponCreateSerializer(serializers.ModelSerializer):
+    restaurant_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Coupon
+        fields = [
+            "restaurant_id",
+            "title",
+            "description",
+            "code",
+            "percentage",
+            "min_price",
+            "max_total_users",
+            "max_per_customer",
+            "start_date",
+            "end_date",
+            "is_active",
+        ]
+
+
+class SellerCouponUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = [
+            "title",
+            "description",
+            "code",
+            "percentage",
+            "min_price",
+            "max_total_users",
+            "max_per_customer",
+            "start_date",
+            "end_date",
+            "is_active",
         ]
 
 {
