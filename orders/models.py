@@ -49,7 +49,7 @@ class Order(models.Model):
     )
 
     restaurant = models.ForeignKey(
-        "restaurants.Restaurant",
+        "sellers.Restaurant",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -82,7 +82,7 @@ class Order(models.Model):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     coupon = models.ForeignKey(
-        "restaurants.Coupon",
+        "sellers.Coupon",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -145,7 +145,7 @@ class OrderItem(models.Model):
     )
 
     item = models.ForeignKey(
-        "restaurants.Item",
+        "sellers.Item",
         on_delete=models.PROTECT,
         related_name="order_items",
     )

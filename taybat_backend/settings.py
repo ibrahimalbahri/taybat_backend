@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     # my apps
     'users',
     'drivers',
-    'restaurants',
+    'sellers',
     'orders',
     'payments',
     'loyalty',

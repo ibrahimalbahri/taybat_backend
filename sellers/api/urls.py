@@ -1,11 +1,11 @@
 from django.urls import path
 
-from restaurants.api.customer_views import (
+from sellers.api.customer_views import (
     CustomerRestaurantListView,
     CustomerRestaurantDetailView,
     CustomerItemSearchView,
 )
-from restaurants.api.seller_views import (
+from sellers.api.seller_views import (
     SellerOrderListView,
     SellerOrderDetailView,
     SellerOrderAcceptView,
@@ -16,11 +16,11 @@ from restaurants.api.seller_views import (
     SellerItemDetailView,
     SellerItemStatsView,
 )
-from restaurants.api.admin_restaurant_views import (
+from sellers.api.admin_restaurant_views import (
     AdminRestaurantActivateView,
     AdminRestaurantDeactivateView,
 )
-from restaurants.api.admin_coupon_views import (
+from sellers.api.admin_coupon_views import (
     AdminCouponListView,
     AdminCouponDetailView,
     AdminCouponDisableView,

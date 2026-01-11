@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsSeller
-from restaurants.models import Restaurant
+from sellers.models import Restaurant
 from orders.models import Order, ManualOrder
 from taybat_backend.typing import get_authenticated_user
 

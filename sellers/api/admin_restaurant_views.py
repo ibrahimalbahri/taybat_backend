@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsAdmin
-from restaurants.models import Restaurant, RestaurantStatus
+from sellers.models import Restaurant, RestaurantStatus
 
 
 class AdminRestaurantActivateView(APIView):

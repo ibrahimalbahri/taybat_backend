@@ -6,8 +6,8 @@ from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticated
 
 from users.permissions import IsCustomer
-from restaurants.models import Restaurant, Category, Item
-from restaurants.api.serializers import (
+from sellers.models import Restaurant, Category, Item
+from sellers.api.serializers import (
     RestaurantListSerializer,
     RestaurantDetailSerializer,
     ItemSearchResultSerializer

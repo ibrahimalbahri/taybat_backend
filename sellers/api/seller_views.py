@@ -11,8 +11,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsSeller
-from restaurants.models import Restaurant, Category, Item
-from restaurants.api.seller_serializers import (
+from sellers.models import Restaurant, Category, Item
+from sellers.api.seller_serializers import (
     SellerCategorySerializer,
     SellerItemSerializer,
 )

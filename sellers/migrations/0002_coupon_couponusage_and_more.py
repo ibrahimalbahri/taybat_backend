@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('orders', '0001_initial'),
-        ('restaurants', '0001_initial'),
+        ('sellers', '0001_initial'),
     ]
 
     operations = [
@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('end_date', models.DateTimeField()),
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='coupons', to='restaurants.restaurant')),
+                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='coupons', to='sellers.restaurant')),
             ],
             options={
                 'verbose_name': 'Coupon',
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('coupon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='usages', to='restaurants.coupon')),
+                ('coupon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='usages', to='sellers.coupon')),
                 ('order', models.ForeignKey(blank=True, help_text='Order that used this coupon (nullable for audit or pre-checkout reservations).', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='coupon_usages', to='orders.order')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='coupon_usages', to=settings.AUTH_USER_MODEL)),
             ],

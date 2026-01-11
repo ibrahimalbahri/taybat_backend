@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
-from restaurants.models import Restaurant, Category, Item
+from sellers.models import Restaurant, Category, Item
 
 
 class RestaurantListSerializer(serializers.ModelSerializer):

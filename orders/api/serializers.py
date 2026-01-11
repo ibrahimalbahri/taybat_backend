@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from rest_framework import serializers
 
-from restaurants.models import Restaurant, Item
+from sellers.models import Restaurant, Item
 from orders.models import Order, OrderItem
 
 

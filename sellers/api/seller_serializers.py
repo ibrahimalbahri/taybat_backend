@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from restaurants.models import Category, Item
+from sellers.models import Category, Item
 
 
 class SellerCategorySerializer(serializers.ModelSerializer):

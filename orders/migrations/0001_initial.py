@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('restaurants', '0001_initial'),
+        ('sellers', '0001_initial'),
         ('users', '0002_address'),
     ]
 
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('driver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='driver_orders', to=settings.AUTH_USER_MODEL)),
                 ('dropoff_address', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='dropoff_orders', to='users.address')),
                 ('pickup_address', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='pickup_orders', to='users.address')),
-                ('restaurant', models.ForeignKey(blank=True, help_text='Food orders only; null for shipping/taxi', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to='restaurants.restaurant')),
+                ('restaurant', models.ForeignKey(blank=True, help_text='Food orders only; null for shipping/taxi', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to='sellers.restaurant')),
             ],
             options={
                 'verbose_name': 'Order',
@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('quantity', models.PositiveIntegerField(default=1)),
                 ('customizations', models.JSONField(blank=True, null=True)),
-                ('item', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='order_items', to='restaurants.item')),
+                ('item', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='order_items', to='sellers.item')),
                 ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='orders.order')),
             ],
             options={

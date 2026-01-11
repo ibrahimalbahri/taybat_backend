@@ -12,10 +12,10 @@ from rest_framework import generics
 
 from users.permissions import IsCustomer
 from users.models import Address
-from restaurants.models import Restaurant, Item
+from sellers.models import Restaurant, Item
 from orders.models import Order, OrderItem, OrderType, OrderStatus, OrderStatusHistory
 from orders.api.serializers import FoodCheckoutSerializer, OrderOutputSerializer
-from restaurants.services.coupons import apply_coupon_to_order, CouponError
+from sellers.services.coupons import apply_coupon_to_order, CouponError
 from taybat_backend.typing import get_authenticated_user
 
 class CustomerFoodCheckoutView(APIView):
@@ -31,7 +31,7 @@ class CustomerFoodCheckoutView(APIView):
         restaurant = Restaurant.objects.get(id=data["restaurant_id"])
 
         # Block checkout for inactive restaurants
-        from restaurants.models import RestaurantStatus
+        from sellers.models import RestaurantStatus
 
         if restaurant.status != RestaurantStatus.ACTIVE:
             return Response(

@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
                 ('view_order', models.PositiveIntegerField(default=0)),
-                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='restaurants.restaurant')),
+                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='sellers.restaurant')),
             ],
             options={
                 'verbose_name': 'Category',
@@ -58,8 +58,8 @@ class Migration(migrations.Migration):
                 ('view_order', models.PositiveIntegerField(default=0)),
                 ('is_available', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='items', to='restaurants.category')),
-                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='restaurants.restaurant')),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='items', to='sellers.category')),
+                ('restaurant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='sellers.restaurant')),
             ],
             options={
                 'verbose_name': 'Item',

@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
-from restaurants.models import Coupon, CouponUsage
+from sellers.models import Coupon, CouponUsage
 from orders.models import Order
 
 
