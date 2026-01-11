@@ -1,12 +1,45 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 
-class UserRole(models.TextChoices):
-    CUSTOMER = "CUSTOMER", "Customer"
-    DRIVER = "DRIVER", "Driver"
-    SELLER = "SELLER", "Seller"
-    ADMIN = "ADMIN", "Admin"
+class Role(models.Model):
+    name = models.CharField(max_length=32, unique=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Role"
+        verbose_name_plural = "Roles"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class UserRole(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_roles",
+    )
+    role = models.ForeignKey(
+        "users.Role",
+        on_delete=models.CASCADE,
+        related_name="role_users",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "User Role"
+        verbose_name_plural = "User Roles"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "role"], name="uniq_user_role"),
+        ]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["role"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"UserRole(user={self.user_id}, role={self.role_id})"
 
 
 class UserManager(BaseUserManager["User"]):
@@ -53,7 +86,10 @@ class UserManager(BaseUserManager["User"]):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self.create_user(email, password, **extra_fields)
+        user = self.create_user(email, password, **extra_fields)
+        user.add_role("admin")
+        AdminProfile.objects.get_or_create(user=user)
+        return user
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -67,11 +103,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     age = models.PositiveIntegerField(null=True, blank=True)
     email = models.EmailField(unique=True, db_index=True)
     phone = models.CharField(max_length=20, unique=True, db_index=True) # TODO: Add phone number validation + format validation
-    role = models.CharField(
-        max_length=20,
-        choices=UserRole.choices,
-        default=UserRole.CUSTOMER,
-    )
     otp_code_hash = models.CharField(max_length=128, null=True, blank=True)
     otp_code_created_at = models.DateTimeField(null=True, blank=True)
     is_verified = models.BooleanField(default=False)
@@ -80,6 +111,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Minimal Django auth flags (no extra auth logic yet)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+
+    roles = models.ManyToManyField(
+        "users.Role",
+        through="users.UserRole",
+        related_name="users",
+    )
 
     objects = UserManager()
 
@@ -92,6 +129,87 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return f"{self.name} <{self.email}>"
+
+    def has_role(self, name: str) -> bool:
+        return self.roles.filter(name=name.lower()).exists()
+
+    def add_role(self, name: str) -> None:
+        role, _ = Role.objects.get_or_create(name=name.lower())
+        UserRole.objects.get_or_create(user=self, role=role)
+
+    def remove_role(self, name: str) -> None:
+        try:
+            role = Role.objects.get(name=name.lower())
+        except Role.DoesNotExist:
+            return
+        UserRole.objects.filter(user=self, role=role).delete()
+
+    @property
+    def is_customer_role(self) -> bool:
+        return self.has_role("customer")
+
+    @property
+    def is_driver_role(self) -> bool:
+        return self.has_role("driver")
+
+    @property
+    def is_seller_role(self) -> bool:
+        return self.has_role("seller")
+
+    @property
+    def is_admin_role(self) -> bool:
+        return self.has_role("admin")
+
+
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="customer_profile",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Customer Profile"
+        verbose_name_plural = "Customer Profiles"
+
+    def __str__(self) -> str:
+        return f"CustomerProfile(user={self.user_id})"
+
+
+class SellerProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="seller_profile",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Seller Profile"
+        verbose_name_plural = "Seller Profiles"
+
+    def __str__(self) -> str:
+        return f"SellerProfile(user={self.user_id})"
+
+
+class AdminProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="admin_profile",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Admin Profile"
+        verbose_name_plural = "Admin Profiles"
+
+    def __str__(self) -> str:
+        return f"AdminProfile(user={self.user_id})"
 
 
 class Address(models.Model):

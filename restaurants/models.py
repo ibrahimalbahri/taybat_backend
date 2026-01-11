@@ -13,7 +13,7 @@ class Restaurant(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="owned_restaurants",
-        help_text="User who owns the restaurant (role=SELLER).",
+        help_text="User who owns the restaurant.",
     )
 
     name = models.CharField(max_length=255)

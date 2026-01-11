@@ -4,10 +4,14 @@ from .models import User, Address
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("email", "name", "role", "is_verified", "is_staff", "created_at")
-    list_filter = ("role", "is_verified", "is_staff")
+    list_display = ("email", "name", "roles_list", "is_verified", "is_staff", "created_at")
+    list_filter = ("roles", "is_verified", "is_staff")
     search_fields = ("email", "phone", "name")
     ordering = ("-created_at",)
+
+    def roles_list(self, obj):
+        return ", ".join(obj.roles.values_list("name", flat=True))
+    roles_list.short_description = "Roles"
 
 
 @admin.register(Address)

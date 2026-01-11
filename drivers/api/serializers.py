@@ -93,7 +93,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="user.name", read_only=True)
     phone = serializers.CharField(source="user.phone", read_only=True)
     age = serializers.IntegerField(source="user.age", read_only=True)
-    role = serializers.CharField(source="user.role", read_only=True)
+    roles = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverProfile
@@ -103,7 +103,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "name",
             "phone",
             "age",
-            "role",
+            "roles",
             "status",
             "vehicle_type",
             "accepts_food",
@@ -115,3 +115,6 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "other_documents",
             "created_at",
         ]
+
+    def get_roles(self, obj):
+        return list(obj.user.roles.values_list("name", flat=True))

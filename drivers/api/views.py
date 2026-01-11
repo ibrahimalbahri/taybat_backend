@@ -7,10 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 
-from users.permissions import IsDriver, IsAdmin
-from users.models import User, UserRole
-from drivers.models import DriverProfile
+from users.permissions import IsAdmin, IsApprovedDriver
+from users.models import User
+from drivers.models import DriverProfile, DriverStatus
 from drivers.api import serializers
+from orders.services.eligibility import is_driver_eligible_for_order
 from orders.models import (
     Order,
     OrderStatus,
@@ -25,7 +26,7 @@ class DriverCreateView(APIView):
     """
     Create a driver user and profile (admin-only).
     """
-    permission_classes = [IsAuthenticated, IsAdmin | IsDriver]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     @extend_schema(
         request=serializers.DriverCreateSerializer,
@@ -37,25 +38,37 @@ class DriverCreateView(APIView):
         serializer = serializers.DriverCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        
+
         user, _created = User.objects.get_or_create_user(
             email=data["email"],
             name=data["name"],
             phone=data["phone"],
             age=data.get("age"),
-            role=UserRole.DRIVER,
         )
+        user.add_role("driver")
 
-        profile = DriverProfile.objects.create(
+        profile, created = DriverProfile.objects.get_or_create(
             user=user,
-            vehicle_type=data["vehicle_type"],
-            accepts_food=data.get("accepts_food", False),
-            accepts_shipping=data.get("accepts_shipping", False),
-            accepts_taxi=data.get("accepts_taxi", False),
-            driving_license=data.get("driving_license"),
-            id_document=data.get("id_document"),
-            other_documents=data.get("other_documents"),
+            defaults={
+                "vehicle_type": data["vehicle_type"],
+                "accepts_food": data.get("accepts_food", False),
+                "accepts_shipping": data.get("accepts_shipping", False),
+                "accepts_taxi": data.get("accepts_taxi", False),
+                "driving_license": data.get("driving_license"),
+                "id_document": data.get("id_document"),
+                "other_documents": data.get("other_documents"),
+                "status": DriverStatus.PENDING,
+            },
         )
+        if not created:
+            profile.vehicle_type = data["vehicle_type"]
+            profile.accepts_food = data.get("accepts_food", False)
+            profile.accepts_shipping = data.get("accepts_shipping", False)
+            profile.accepts_taxi = data.get("accepts_taxi", False)
+            profile.driving_license = data.get("driving_license")
+            profile.id_document = data.get("id_document")
+            profile.other_documents = data.get("other_documents")
+            profile.save()
 
         response_serializer = serializers.DriverProfileSerializer(profile)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -64,7 +77,7 @@ class DriverOnlineToggleView(APIView):
     """
     Toggle driver online/offline status.
     """
-    permission_classes = [IsAuthenticated, IsDriver]
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
 
     @extend_schema(
         request=serializers.DriverOnlineStatusSerializer,
@@ -96,7 +109,7 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
     GET /api/drivers/suggested-orders/
     Returns orders that have been suggested to this driver and are still available.
     """
-    permission_classes = [IsAuthenticated, IsDriver]
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
     serializer_class = serializers.SuggestedOrderSerializer
 
     def get_queryset(self):
@@ -106,6 +119,9 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
         try:
             driver_profile = driver.driver_profile
         except DriverProfile.DoesNotExist:
+            return Order.objects.none()
+
+        if driver_profile.status != DriverStatus.APPROVED:
             return Order.objects.none()
 
         # Only show orders that:
@@ -159,7 +175,7 @@ class DriverAcceptOrderView(APIView):
     """
     Accept an order with atomic locking to prevent race conditions.
     """
-    permission_classes = [IsAuthenticated, IsDriver]
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
 
     @extend_schema(
         request=serializers.OrderAcceptRejectSerializer,
@@ -208,6 +224,31 @@ class DriverAcceptOrderView(APIView):
                 status=status.HTTP_409_CONFLICT
             )
 
+        if order.customer_id == driver.id:
+            return Response(
+                {"detail": "You cannot accept your own order."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            driver_profile = driver.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response(
+                {"detail": "Driver profile not found."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if driver_profile.status != DriverStatus.APPROVED:
+            return Response(
+                {"detail": "Driver is not approved."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not is_driver_eligible_for_order(driver_profile=driver_profile, order=order):
+            return Response(
+                {"detail": "Driver is not eligible for this order type."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         # Verify driver was suggested this order
         suggestion_exists = OrderDriverSuggestion.objects.filter(
             order=order,
@@ -245,7 +286,7 @@ class DriverRejectOrderView(APIView):
     """
     Reject a suggested order.
     """
-    permission_classes = [IsAuthenticated, IsDriver]
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
 
     @extend_schema(
         request=serializers.OrderAcceptRejectSerializer,
@@ -316,7 +357,7 @@ class DriverUpdateOrderStatusView(APIView):
     """
     Update order status (on_the_way, delivered, completed) with history recording.
     """
-    permission_classes = [IsAuthenticated, IsDriver]
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
 
     @extend_schema(
         request=serializers.OrderStatusUpdateSerializer,

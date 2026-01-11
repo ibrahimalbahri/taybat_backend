@@ -18,7 +18,7 @@ class VehicleType(models.TextChoices):
 class DriverProfile(models.Model):
     """
     Operational profile for drivers.
-    Exists only for users with role=DRIVER.
+    Exists only for users with the driver role.
     """
 
     user = models.OneToOneField(
@@ -121,4 +121,3 @@ class DriverVerification(models.Model):
 
     def __str__(self) -> str:
         return f"DriverVerification(driver={self.driver_id}, status={self.status})"
-

@@ -14,7 +14,7 @@ from users.api.serializers import (
     OtpRequestSerializer,
     OtpVerifySerializer,
 )
-from users.models import User
+from users.models import CustomerProfile, User
 
 
 class BlacklistRefreshView(generics.GenericAPIView):
@@ -89,6 +89,8 @@ class OtpVerifyView(generics.GenericAPIView):
         user.otp_code_hash = None
         user.otp_code_created_at = None
         user.save(update_fields=["otp_code_hash", "otp_code_created_at"])
+        user.add_role("customer")
+        CustomerProfile.objects.get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)
         return Response(
