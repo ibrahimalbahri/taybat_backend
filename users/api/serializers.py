@@ -136,3 +136,35 @@ class AddressCreateUpdateSerializer(serializers.ModelSerializer):
             "postal_code",
             "country",
         ]
+
+
+class UserMeSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "name",
+            "phone",
+            "age",
+            "is_verified",
+            "created_at",
+            "roles",
+        ]
+
+    def get_roles(self, obj: User) -> list[str]:
+        return list(obj.roles.values_list("name", flat=True))
+
+
+class UserMeUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(required=False)
+    phone = serializers.CharField(required=False)
+    age = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_phone(self, value: str) -> str:
+        user = self.context["request"].user
+        if User.objects.filter(phone=value).exclude(id=user.id).exists():
+            raise serializers.ValidationError("A user with this phone already exists.")
+        return value

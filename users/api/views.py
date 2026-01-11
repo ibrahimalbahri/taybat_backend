@@ -23,6 +23,8 @@ from users.api.serializers import (
     DriverProfileSerializer,
     AddressSerializer,
     AddressCreateUpdateSerializer,
+    UserMeSerializer,
+    UserMeUpdateSerializer,
 )
 from users.models import Address, CustomerProfile, DriverProfile, User
 from users.permissions import IsCustomer, IsSeller, IsDriver, IsAuthenticated
@@ -244,3 +246,33 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in {"PUT", "PATCH"}:
             return AddressCreateUpdateSerializer
         return AddressSerializer
+
+
+class UserMeView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        return Response(UserMeSerializer(user).data, status=status.HTTP_200_OK)
+
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = UserMeUpdateSerializer(
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_authenticated_user(request)
+        update_fields: list[str] = []
+        for field in ("name", "phone", "age"):
+            if field in data:
+                setattr(user, field, data[field])
+                update_fields.append(field)
+        if update_fields:
+            user.save(update_fields=update_fields)
+
+        return Response(UserMeSerializer(user).data, status=status.HTTP_200_OK)
