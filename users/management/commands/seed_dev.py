@@ -19,6 +19,15 @@ from users.models import (
     Address,
 )
 from sellers.models import Restaurant, Category, Item, Coupon, RestaurantStatus
+from orders.models import (
+    Order,
+    OrderItem,
+    OrderStatus,
+    OrderStatusHistory,
+    OrderType,
+    OrderDriverSuggestion,
+    ShippingPackage,
+)
 
 
 class Command(BaseCommand):
@@ -103,6 +112,34 @@ class Command(BaseCommand):
                 "country": "SA",
             },
         )
+        pickup_address, _ = Address.objects.get_or_create(
+            user=customer,
+            label="pickup",
+            defaults={
+                "lat": Decimal("24.7200"),
+                "lng": Decimal("46.6800"),
+                "full_address": "Seed Pickup Address",
+                "street_name": "Pickup St",
+                "house_number": "10",
+                "city": "Riyadh",
+                "postal_code": "00001",
+                "country": "SA",
+            },
+        )
+        dropoff_address, _ = Address.objects.get_or_create(
+            user=customer,
+            label="dropoff",
+            defaults={
+                "lat": Decimal("24.7250"),
+                "lng": Decimal("46.6850"),
+                "full_address": "Seed Dropoff Address",
+                "street_name": "Dropoff St",
+                "house_number": "20",
+                "city": "Riyadh",
+                "postal_code": "00002",
+                "country": "SA",
+            },
+        )
 
         restaurant, _ = Restaurant.objects.get_or_create(
             owner_user=seller,
@@ -133,6 +170,7 @@ class Command(BaseCommand):
                 "is_available": True,
             },
         )
+        burger = Item.objects.get(restaurant=restaurant, category=category, name="Classic Burger")
 
         now = timezone.now()
         Coupon.objects.get_or_create(
@@ -147,6 +185,15 @@ class Command(BaseCommand):
                 "end_date": now + timedelta(days=30),
                 "is_active": True,
             },
+        )
+
+        self._seed_orders(
+            customer=customer,
+            driver=driver,
+            restaurant=restaurant,
+            burger=burger,
+            pickup_address=pickup_address,
+            dropoff_address=dropoff_address,
         )
 
         self.stdout.write(self.style.SUCCESS("Seed data created/updated successfully."))
@@ -180,3 +227,97 @@ class Command(BaseCommand):
             if updated_fields:
                 user.save(update_fields=updated_fields)
         return user
+
+    def _seed_orders(
+        self,
+        *,
+        customer: User,
+        driver: User,
+        restaurant: Restaurant,
+        burger: Item,
+        pickup_address: Address,
+        dropoff_address: Address,
+    ) -> None:
+        food_order, created = Order.objects.get_or_create(
+            order_type=OrderType.FOOD,
+            customer=customer,
+            restaurant=restaurant,
+            pickup_address=pickup_address,
+            dropoff_address=dropoff_address,
+            defaults={
+                "status": OrderStatus.SEARCHING_FOR_DRIVER,
+                "subtotal_amount": Decimal("25.00"),
+                "discount_amount": Decimal("0.00"),
+                "delivery_fee": Decimal("5.00"),
+                "tip": Decimal("2.00"),
+                "total_amount": Decimal("32.00"),
+            },
+        )
+        if created:
+            OrderItem.objects.create(
+                order=food_order,
+                item=burger,
+                quantity=1,
+                customizations=None,
+            )
+            OrderStatusHistory.objects.create(
+                order=food_order,
+                status=food_order.status,
+            )
+            OrderDriverSuggestion.objects.get_or_create(
+                order=food_order,
+                driver=driver,
+                defaults={"distance_at_time": Decimal("2.5")},
+            )
+
+        shipping_order, created = Order.objects.get_or_create(
+            order_type=OrderType.SHIPPING,
+            customer=customer,
+            pickup_address=pickup_address,
+            dropoff_address=dropoff_address,
+            defaults={
+                "status": OrderStatus.PENDING,
+                "subtotal_amount": Decimal("15.00"),
+                "discount_amount": Decimal("0.00"),
+                "delivery_fee": Decimal("8.00"),
+                "tip": Decimal("0.00"),
+                "total_amount": Decimal("23.00"),
+                "requested_delivery_type": VehicleType.BIKE,
+                "calculated_distance": Decimal("3.200"),
+                "calculated_time": 900,
+            },
+        )
+        if created:
+            ShippingPackage.objects.create(
+                order=shipping_order,
+                size="M",
+                weight=Decimal("2.50"),
+                content="Seed package",
+            )
+            OrderStatusHistory.objects.create(
+                order=shipping_order,
+                status=shipping_order.status,
+            )
+
+        taxi_order, created = Order.objects.get_or_create(
+            order_type=OrderType.TAXI,
+            customer=customer,
+            pickup_address=pickup_address,
+            dropoff_address=dropoff_address,
+            defaults={
+                "status": OrderStatus.PENDING,
+                "subtotal_amount": Decimal("12.00"),
+                "discount_amount": Decimal("0.00"),
+                "delivery_fee": Decimal("5.00"),
+                "tip": Decimal("3.00"),
+                "total_amount": Decimal("20.00"),
+                "requested_vehicle_type": VehicleType.CAR,
+                "calculated_distance": Decimal("4.000"),
+                "calculated_time": 600,
+            },
+        )
+        if created:
+            OrderStatusHistory.objects.create(
+                order=taxi_order,
+                status=taxi_order.status,
+            )
