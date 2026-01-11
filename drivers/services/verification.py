@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Service-layer functions for driver verification workflow.
 """
@@ -82,5 +84,4 @@ def verify_driver(
     )
 
     return DriverVerificationResult(verification=verification, profile=profile)
-
 

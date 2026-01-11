@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,7 +10,7 @@ from users.models import Address, CustomerProfile, User
 
 
 class DriverOrderAcceptanceTests(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.customer = User.objects.create_user(
             email="customer@example.com",
             name="Customer",
@@ -71,14 +73,14 @@ class DriverOrderAcceptanceTests(APITestCase):
             distance_at_time=1,
         )
 
-    def test_pending_driver_cannot_accept(self):
+    def test_pending_driver_cannot_accept(self) -> None:
         url = reverse("driver-accept-order")
         self.client.force_authenticate(user=self.driver)
         response = self.client.post(url, {"order_id": self.order.id})
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_approved_driver_can_accept(self):
+    def test_approved_driver_can_accept(self) -> None:
         profile = self.driver.driver_profile
         profile.status = DriverStatus.APPROVED
         profile.save(update_fields=["status"])
@@ -93,7 +95,7 @@ class DriverOrderAcceptanceTests(APITestCase):
         self.assertEqual(self.order.driver_id, self.driver.id)
         self.assertTrue(self.driver.has_role("customer"))
 
-    def test_driver_cannot_accept_own_order(self):
+    def test_driver_cannot_accept_own_order(self) -> None:
         own_order = Order.objects.create(
             order_type=OrderType.SHIPPING,
             customer=self.driver,

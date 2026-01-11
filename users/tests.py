@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory
+from rest_framework.views import APIView
 
 from users.models import User
 from users.permissions import IsAdmin
 
 
 class RoleHelperTests(TestCase):
-    def test_add_and_remove_role(self):
+    def test_add_and_remove_role(self) -> None:
         user = User.objects.create_user(
             email="role@example.com",
             name="Role User",
@@ -23,9 +26,10 @@ class RoleHelperTests(TestCase):
 
 
 class PermissionRoleTests(TestCase):
-    def test_is_admin_uses_roles(self):
+    def test_is_admin_uses_roles(self) -> None:
         factory = APIRequestFactory()
         request = factory.get("/api/admin/")
+        view = APIView()
 
         user = User.objects.create_user(
             email="admin-check@example.com",
@@ -35,14 +39,14 @@ class PermissionRoleTests(TestCase):
         request.user = user
 
         permission = IsAdmin()
-        self.assertFalse(permission.has_permission(request, None))
+        self.assertFalse(permission.has_permission(request, view))
 
         user.add_role("admin")
-        self.assertTrue(permission.has_permission(request, None))
+        self.assertTrue(permission.has_permission(request, view))
 
 
 class RoleMigrationBackfillTests(TestCase):
-    def test_roles_and_profiles_backfilled(self):
+    def test_roles_and_profiles_backfilled(self) -> None:
         import importlib
 
         migration_module = importlib.import_module(

@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 from users.permissions import IsAdmin
 from payments.models import Transaction
@@ -35,10 +40,10 @@ class AdminTransactionListView(generics.ListAPIView):
         responses=AdminTransactionSerializer(many=True),
         description="Paginated admin transaction audit view.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Transaction]:
         qs = Transaction.objects.select_related("user", "order").all()
         user_id = self.request.query_params.get("user_id")
         order_id = self.request.query_params.get("order_id")
@@ -56,5 +61,4 @@ class AdminTransactionListView(generics.ListAPIView):
         if to_val:
             qs = qs.filter(created_at__lte=to_val)
         return qs.order_by("-created_at")
-
 

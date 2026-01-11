@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django.conf import settings
 
@@ -279,4 +281,3 @@ class ManualOrder(models.Model):
 
     def __str__(self) -> str:
         return f"ManualOrder(order={self.order_id}, staff_user={self.staff_user_id})"
-

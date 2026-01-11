@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 # payments/services/payment_service.py
 from decimal import Decimal
+from typing import Optional
+
 from django.db import transaction
 from django.utils import timezone
 
 from payments.gateways.selector import get_gateway
 from payments.models import Transaction, TransactionType, TransactionStatus, PaymentProvider, PaymentMethod
+from orders.models import Order
+from users.models import User
 
 
 class PaymentError(Exception):
@@ -14,7 +20,14 @@ class PaymentError(Exception):
 class PaymentService:
     @staticmethod
     @transaction.atomic
-    def capture_order_payment(*, order, user, payment_method: PaymentMethod, currency: str, idempotency_key: str | None):
+    def capture_order_payment(
+        *,
+        order: Order,
+        user: User,
+        payment_method: PaymentMethod,
+        currency: str,
+        idempotency_key: Optional[str],
+    ) -> Transaction:
         """
         Captures total_amount for the order, records PAYMENT and (optionally) TIP ledger entries.
         Idempotency: if idempotency_key already exists and SUCCEEDED, return existing tx.

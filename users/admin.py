@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from django.contrib import admin
+
 from .models import User, Address
 
 
@@ -9,9 +12,9 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ("email", "phone", "name")
     ordering = ("-created_at",)
 
-    def roles_list(self, obj):
+    @admin.display(description="Roles")
+    def roles_list(self, obj: User) -> str:
         return ", ".join(obj.roles.values_list("name", flat=True))
-    roles_list.short_description = "Roles"
 
 
 @admin.register(Address)

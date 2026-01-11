@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from decimal import Decimal
 from rest_framework import serializers
 from orders.models import VehicleType
@@ -93,4 +95,3 @@ class PriceQuoteResponseSerializer(serializers.Serializer):
         decimal_places=2,
         help_text="Total amount (subtotal + tip)"
     )
-

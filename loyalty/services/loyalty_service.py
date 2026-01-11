@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 # loyalty/services/loyalty_service.py
 from decimal import Decimal
+from typing import Optional
+
 from django.conf import settings
 from django.db import transaction
 
 from loyalty.models import LoyaltyPoint, LoyaltySource
+from orders.models import Order
+from users.models import User
 
 
 class LoyaltyService:
@@ -14,12 +20,12 @@ class LoyaltyService:
         return int(Decimal(amount) * Decimal(ppe))
 
     @staticmethod
-    def _already_issued(order) -> bool:
+    def _already_issued(order: Order) -> bool:
         return LoyaltyPoint.objects.filter(order=order, source=LoyaltySource.ORDER).exists()
 
     @staticmethod
     @transaction.atomic
-    def issue_for_order(*, order):
+    def issue_for_order(*, order: Order) -> LoyaltyPoint | None:
         # Optionally restrict to FOOD only:
         only_food = getattr(settings, "LOYALTY_ONLY_FOOD", False)
         if only_food and getattr(order, "order_type", None) != "FOOD":
@@ -47,7 +53,7 @@ class LoyaltyService:
 
     @staticmethod
     @transaction.atomic
-    def reverse_for_order(*, order, note: str | None = None):
+    def reverse_for_order(*, order: Order, note: Optional[str] = None) -> LoyaltyPoint | None:
         issued = LoyaltyPoint.objects.filter(order=order, source=LoyaltySource.ORDER).first()
         if not issued:
             return None
@@ -66,7 +72,13 @@ class LoyaltyService:
 
     @staticmethod
     @transaction.atomic
-    def admin_adjust(*, admin_user, user, points: int, note: str | None):
+    def admin_adjust(
+        *,
+        admin_user: User,
+        user: User,
+        points: int,
+        note: Optional[str],
+    ) -> LoyaltyPoint:
         if points == 0:
             raise ValueError("Points cannot be zero.")
         return LoyaltyPoint.objects.create(

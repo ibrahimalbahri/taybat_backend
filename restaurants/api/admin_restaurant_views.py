@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,7 +23,7 @@ class AdminRestaurantActivateView(APIView):
         responses={200: None},
         description="Activate a restaurant so it appears to customers and accepts orders.",
     )
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
         try:
             restaurant = Restaurant.objects.get(pk=pk)
         except Restaurant.DoesNotExist:
@@ -46,7 +49,7 @@ class AdminRestaurantDeactivateView(APIView):
         responses={200: None},
         description="Deactivate a restaurant; hide from customers and block new FOOD orders.",
     )
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
         try:
             restaurant = Restaurant.objects.get(pk=pk)
         except Restaurant.DoesNotExist:
@@ -58,5 +61,4 @@ class AdminRestaurantDeactivateView(APIView):
         restaurant.status = RestaurantStatus.INACTIVE
         restaurant.save(update_fields=["status"])
         return Response(status=status.HTTP_200_OK)
-
 

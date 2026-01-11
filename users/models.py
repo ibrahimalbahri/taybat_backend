@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional, Tuple
+
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
@@ -47,7 +51,12 @@ class UserManager(BaseUserManager["User"]):
     Custom user manager that uses email as the unique identifier.
     """
 
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(
+        self,
+        email: str,
+        password: Optional[str] = None,
+        **extra_fields: object,
+    ) -> "User":
         if not email:
             raise ValueError("The Email field must be set")
 
@@ -61,7 +70,12 @@ class UserManager(BaseUserManager["User"]):
         user.save(using=self._db)
         return user
 
-    def get_or_create_user(self, email, password=None, **extra_fields):
+    def get_or_create_user(
+        self,
+        email: str,
+        password: Optional[str] = None,
+        **extra_fields: object,
+    ) -> Tuple["User", bool]:
         if not email:
             raise ValueError("The Email field must be set")
 
@@ -77,7 +91,12 @@ class UserManager(BaseUserManager["User"]):
             user.save(using=self._db)
             return user, True
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(
+        self,
+        email: str,
+        password: Optional[str] = None,
+        **extra_fields: object,
+    ) -> "User":
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django.conf import settings
 
@@ -120,4 +122,4 @@ class DriverVerification(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"DriverVerification(driver={self.driver_id}, status={self.status})"
+        return f"DriverVerification(driver={self.driver.id}, status={self.status})"

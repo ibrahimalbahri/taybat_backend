@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -20,6 +23,7 @@ from orders.models import (
     OrderType,
 )
 from loyalty.services.loyalty_service import LoyaltyService
+from taybat_backend.typing import get_authenticated_user
 
 
 class DriverCreateView(APIView):
@@ -34,7 +38,7 @@ class DriverCreateView(APIView):
         description="Create a driver user and profile.",
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = serializers.DriverCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -84,13 +88,14 @@ class DriverOnlineToggleView(APIView):
         responses={200: serializers.DriverOnlineStatusSerializer},
         description="Toggle driver online/offline status"
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = serializers.DriverOnlineStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         is_online = serializer.validated_data["is_online"]
 
+        user = get_authenticated_user(request)
         driver_profile, created = DriverProfile.objects.get_or_create(
-            user=request.user,
+            user=user,
             defaults={"vehicle_type": "BIKE"}  # Default, should be set during registration
         )
 
@@ -112,8 +117,8 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsApprovedDriver]
     serializer_class = serializers.SuggestedOrderSerializer
 
-    def get_queryset(self):
-        driver = self.request.user
+    def get_queryset(self) -> QuerySet[Order]:
+        driver = get_authenticated_user(self.request)
         
         # Get driver profile to check acceptance types
         try:
@@ -165,7 +170,7 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
 
         return queryset
 
-    def get_serializer_context(self):
+    def get_serializer_context(self) -> dict[str, object]:
         context = super().get_serializer_context()
         context["request"] = self.request
         return context
@@ -195,12 +200,12 @@ class DriverAcceptOrderView(APIView):
         description="Accept an order with atomic locking to prevent race conditions"
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = serializers.OrderAcceptRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order_id = serializer.validated_data["order_id"]
 
-        driver = request.user
+        driver = get_authenticated_user(request)
 
         # Lock the order row to prevent concurrent acceptance
         try:
@@ -304,12 +309,12 @@ class DriverRejectOrderView(APIView):
         description="Reject a suggested order"
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = serializers.OrderAcceptRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order_id = serializer.validated_data["order_id"]
 
-        driver = request.user
+        driver = get_authenticated_user(request)
 
         # Verify driver was suggested this order
         try:
@@ -373,13 +378,13 @@ class DriverUpdateOrderStatusView(APIView):
         description="Update order status (on_the_way, delivered, completed) with history recording"
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = serializers.OrderStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order_id = serializer.validated_data["order_id"]
         new_status = serializer.validated_data["status"]
 
-        driver = request.user
+        driver = get_authenticated_user(request)
 
         # Lock the order to prevent concurrent updates
         try:
@@ -394,20 +399,21 @@ class DriverUpdateOrderStatusView(APIView):
             )
 
         # Validate status transition
-        valid_transitions = {
+        valid_transitions: dict[OrderStatus, list[OrderStatus]] = {
             OrderStatus.ACCEPTED: [OrderStatus.ON_THE_WAY],
             OrderStatus.ON_THE_WAY: [OrderStatus.DELIVERED],
             OrderStatus.DELIVERED: [OrderStatus.COMPLETED],
         }
 
-        current_status = order.status
+        current_status = OrderStatus(order.status)
         if current_status not in valid_transitions:
             return Response(
                 {"detail": f"Cannot update status from {current_status}."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if new_status not in valid_transitions[current_status]:
+        new_status_enum = OrderStatus(new_status)
+        if new_status_enum not in valid_transitions[current_status]:
             return Response(
                 {
                     "detail": f"Invalid status transition from {current_status} to {new_status}.",
@@ -418,15 +424,15 @@ class DriverUpdateOrderStatusView(APIView):
 
         # Update order status
         old_status = order.status
-        order.status = new_status
+        order.status = new_status_enum
         order.save(update_fields=["status"])
 
         # Record status history
         OrderStatusHistory.objects.create(
             order=order,
-            status=new_status
+            status=new_status_enum
         )
-        if new_status == OrderStatus.COMPLETED:
+        if new_status_enum == OrderStatus.COMPLETED:
             LoyaltyService.issue_for_order(order=order)
 
         return Response(

@@ -35,7 +35,7 @@ class QuoteResult:
 # Pricing configuration (v1 - simple deterministic rates)
 # These can be moved to settings or database in the future
 
-TAXI_RATES = {
+TAXI_RATES: dict[str, dict[str, Decimal]] = {
     VehicleType.BIKE: {
         "base_fare": Decimal("5.00"),  # Base fare in local currency
         "per_km": Decimal("2.00"),  # Per kilometer rate
@@ -54,7 +54,7 @@ TAXI_RATES = {
     },
 }
 
-SHIPPING_RATES = {
+SHIPPING_RATES: dict[str, dict[str, Decimal]] = {
     VehicleType.BIKE: {
         "base_fee": Decimal("3.00"),
         "per_km": Decimal("1.50"),
@@ -78,7 +78,7 @@ SHIPPING_RATES = {
 }
 
 # Average speeds for time estimation (km/h)
-AVERAGE_SPEEDS = {
+AVERAGE_SPEEDS: dict[str, int] = {
     VehicleType.BIKE: 20,  # km/h
     VehicleType.MOTOR: 40,
     VehicleType.CAR: 50,
@@ -319,4 +319,3 @@ def calculate_quote(
     
     else:
         raise ValueError(f"Unsupported order type: {order_type}")
-

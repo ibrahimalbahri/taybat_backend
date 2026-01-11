@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from decimal import Decimal
 
 from rest_framework import serializers
@@ -51,6 +53,5 @@ class ShippingCheckoutSerializer(serializers.Serializer):
     package = ShippingPackageInputSerializer()
     payment_method_id = serializers.IntegerField()
     idempotency_key = serializers.CharField(required=False, allow_blank=True)
-
 
 

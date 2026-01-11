@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from django.db import models
 from django.conf import settings
+from typing import TYPE_CHECKING
 
 
 class Export(models.Model):
@@ -15,6 +18,11 @@ class Export(models.Model):
     file_path = models.CharField(max_length=500)
     filter_params = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+    objects: models.Manager["Export"] = models.Manager()
+
+    if TYPE_CHECKING:
+        id: int
+        admin_id: int
 
     class Meta:
         verbose_name = "Export"
@@ -24,6 +32,4 @@ class Export(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Export({self.id}) by {self.admin_id}"
-
-
+        return f"Export({self.pk}) by {self.admin_id}"

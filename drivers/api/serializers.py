@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from rest_framework import serializers
 from orders.models import Order, OrderStatus
 from drivers.models import DriverProfile, VehicleType
@@ -37,7 +41,7 @@ class SuggestedOrderSerializer(serializers.ModelSerializer):
             "distance",
         ]
     
-    def get_distance(self, obj):
+    def get_distance(self, obj: Order) -> float | None:
         """Get distance from OrderDriverSuggestion if available."""
         suggestion = obj.driver_suggestions.filter(
             driver=self.context["request"].user
@@ -76,12 +80,12 @@ class DriverCreateSerializer(serializers.Serializer):
     id_document = serializers.FileField(required=False, allow_null=True)
     other_documents = serializers.FileField(required=False, allow_null=True)
 
-    def validate_email(self, value):
+    def validate_email(self, value: str) -> str:
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
 
-    def validate_phone(self, value):
+    def validate_phone(self, value: str) -> str:
         if User.objects.filter(phone=value).exists():
             raise serializers.ValidationError("A user with this phone already exists.")
         return value
@@ -116,5 +120,5 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_roles(self, obj):
+    def get_roles(self, obj: DriverProfile) -> list[str]:
         return list(obj.user.roles.values_list("name", flat=True))

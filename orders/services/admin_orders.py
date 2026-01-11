@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 """
 Admin-facing order dashboard and export services.
 """
 import json
 import os
-from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Any
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from orders.models import Order
 from orders.models_exports import Export
+from users.models import User
 
 
-def build_admin_order_queryset(filters: Dict[str, Any]):
+def build_admin_order_queryset(filters: dict[str, Any]) -> QuerySet[Order]:
     """
     Build filtered queryset for admin order dashboard.
     """
@@ -80,7 +82,7 @@ def _ensure_export_dir() -> str:
     return export_dir
 
 
-def export_orders_to_excel(admin_user, filters: Dict[str, Any]) -> Export:
+def export_orders_to_excel(admin_user: User, filters: dict[str, Any]) -> Export:
     """
     Export filtered orders to an Excel file (tabular).
     """
@@ -140,7 +142,7 @@ def export_orders_to_excel(admin_user, filters: Dict[str, Any]) -> Export:
     return export
 
 
-def export_orders_to_pdf(admin_user, filters: Dict[str, Any]) -> Export:
+def export_orders_to_pdf(admin_user: User, filters: dict[str, Any]) -> Export:
     """
     Export filtered orders to a simple PDF table.
     """
@@ -216,5 +218,4 @@ def export_orders_to_pdf(admin_user, filters: Dict[str, Any]) -> Export:
         filter_params=filters,
     )
     return export
-
 

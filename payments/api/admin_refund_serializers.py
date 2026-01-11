@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # payments/api/admin_refund_serializers.py
 from rest_framework import serializers
 

@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.permissions import IsSeller
 from restaurants.models import Restaurant
 from orders.models import Order, ManualOrder
+from taybat_backend.typing import get_authenticated_user
 
 
 class ManualOrderCreateSerializer(serializers.Serializer):
@@ -41,18 +45,19 @@ class SellerManualOrderCreateView(APIView):
         ),
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = ManualOrderCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
         order_id = data["order_id"]
+        user = get_authenticated_user(request)
 
         # Ensure order exists and belongs to one of the seller's restaurants
         try:
             order = (
                 Order.objects.select_related("restaurant")
-                .get(id=order_id, restaurant__owner_user=request.user)
+                .get(id=order_id, restaurant__owner_user=user)
             )
         except Order.DoesNotExist:
             return Response(
@@ -68,11 +73,9 @@ class SellerManualOrderCreateView(APIView):
             )
 
         ManualOrder.objects.create(
-            staff_user=request.user,
+            staff_user=user,
             order=order,
             scanned_form_data=data["scanned_form_data"],
         )
 
         return Response(status=status.HTTP_201_CREATED)
-
-

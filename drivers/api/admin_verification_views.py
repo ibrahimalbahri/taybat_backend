@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from django.db.models import QuerySet
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
@@ -12,6 +16,7 @@ from drivers.services.verification import (
     DriverAlreadyVerified,
     DriverVerificationError,
 )
+from taybat_backend.typing import get_authenticated_user
 
 
 class AdminDriverProfileSerializer(serializers.ModelSerializer):
@@ -67,10 +72,10 @@ class AdminDriverVerificationQueueView(generics.ListAPIView):
         responses=AdminDriverProfileSerializer(many=True),
         description="List drivers awaiting verification (status=PENDING).",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self): # type: ignore
+    def get_queryset(self) -> QuerySet[DriverProfile]:
         return DriverProfile.objects.filter(status="PENDING").select_related("user")
 
 
@@ -91,14 +96,15 @@ class AdminDriverVerifyView(APIView):
         },
         description="Approve or reject a driver.",
     )
-    def post(self, request, driver_id: int):
+    def post(self, request: Request, driver_id: int) -> Response:
         action_serializer = AdminDriverVerificationActionSerializer(data=request.data)
         action_serializer.is_valid(raise_exception=True)
         data = action_serializer.validated_data
 
+        admin_user = get_authenticated_user(request)
         try:
             result = verify_driver(
-                admin_user=request.user,
+                admin_user=admin_user,
                 driver_user_id=driver_id,
                 status=data["status"],
                 notes=data.get("notes") or "",
@@ -132,13 +138,11 @@ class AdminDriverVerificationHistoryView(generics.ListAPIView):
         responses=AdminDriverVerificationSerializer(many=True),
         description="List verification history for a driver.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[DriverVerification]:
         driver_id = self.kwargs["driver_id"]
         return DriverVerification.objects.filter(driver_id=driver_id).select_related(
             "admin"
         ).order_by("created_at")
-
-

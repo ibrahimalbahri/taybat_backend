@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from django.db import transaction
-from django.db.models import Sum, F
+from django.db.models import Sum, F, QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework import serializers as drf_serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,9 +18,11 @@ from restaurants.api.seller_serializers import (
 )
 from orders.models import Order, OrderStatus, OrderItem, OrderStatusHistory
 from orders.api.serializers import OrderOutputSerializer
+from taybat_backend.typing import get_authenticated_user
+from users.models import User
 
 
-def _get_seller_restaurants(user):
+def _get_seller_restaurants(user: User) -> QuerySet[Restaurant]:
     """
     Return queryset of restaurants owned by the given seller.
     """
@@ -32,8 +37,9 @@ class SellerOrderListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = OrderOutputSerializer
 
-    def get_queryset(self):
-        restaurants = _get_seller_restaurants(self.request.user)
+    def get_queryset(self) -> QuerySet[Order]:
+        user = get_authenticated_user(self.request)
+        restaurants = _get_seller_restaurants(user)
         qs = (
             Order.objects.filter(restaurant__in=restaurants)
             .select_related("restaurant", "coupon", "pickup_address", "dropoff_address")
@@ -54,8 +60,9 @@ class SellerOrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = OrderOutputSerializer
 
-    def get_queryset(self):
-        restaurants = _get_seller_restaurants(self.request.user)
+    def get_queryset(self) -> QuerySet[Order]:
+        user = get_authenticated_user(self.request)
+        restaurants = _get_seller_restaurants(user)
         return (
             Order.objects.filter(restaurant__in=restaurants)
             .select_related("restaurant", "coupon", "pickup_address", "dropoff_address")
@@ -76,14 +83,15 @@ class SellerOrderAcceptView(APIView):
         description="Accept an order for a restaurant owned by the seller.",
     )
     @transaction.atomic
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
+        user = get_authenticated_user(request)
         try:
             order = (
                 Order.objects.select_for_update()
                 .select_related("restaurant")
                 .get(
                     id=pk,
-                    restaurant__owner_user=request.user,
+                    restaurant__owner_user=user,
                 )
             )
         except Order.DoesNotExist:
@@ -132,7 +140,8 @@ class SellerOrderStatusUpdateView(APIView):
         description="Update order status for a restaurant order (e.g. CANCELLED).",
     )
     @transaction.atomic
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
+        user = get_authenticated_user(request)
         new_status = request.data.get("status")
         if not new_status:
             return Response(
@@ -154,7 +163,7 @@ class SellerOrderStatusUpdateView(APIView):
                 .select_related("restaurant")
                 .get(
                     id=pk,
-                    restaurant__owner_user=request.user,
+                    restaurant__owner_user=user,
                 )
             )
         except Order.DoesNotExist:
@@ -181,22 +190,23 @@ class SellerCategoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerCategorySerializer
 
-    def _get_restaurant(self):
+    def _get_restaurant(self) -> Restaurant | None:
         restaurant_id = self.request.query_params.get("restaurant_id")
         if not restaurant_id:
             return None
         try:
-            return Restaurant.objects.get(id=restaurant_id, owner_user=self.request.user)
+            user = get_authenticated_user(self.request)
+            return Restaurant.objects.get(id=restaurant_id, owner_user=user)
         except Restaurant.DoesNotExist:
             return None
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Category]:
         restaurant = self._get_restaurant()
         if not restaurant:
             return Category.objects.none()
         return restaurant.categories.all().order_by("view_order", "name")
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: drf_serializers.BaseSerializer) -> None:
         restaurant = self._get_restaurant()
         if not restaurant:
             raise drf_serializers.ValidationError("Invalid or missing restaurant_id.")
@@ -211,8 +221,9 @@ class SellerCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerCategorySerializer
 
-    def get_queryset(self):
-        return Category.objects.filter(restaurant__owner_user=self.request.user)
+    def get_queryset(self) -> QuerySet[Category]:
+        user = get_authenticated_user(self.request)
+        return Category.objects.filter(restaurant__owner_user=user)
 
 
 class SellerItemListCreateView(generics.ListCreateAPIView):
@@ -225,22 +236,23 @@ class SellerItemListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerItemSerializer
 
-    def _get_restaurant(self):
+    def _get_restaurant(self) -> Restaurant | None:
         restaurant_id = self.request.query_params.get("restaurant_id")
         if not restaurant_id:
             return None
         try:
-            return Restaurant.objects.get(id=restaurant_id, owner_user=self.request.user)
+            user = get_authenticated_user(self.request)
+            return Restaurant.objects.get(id=restaurant_id, owner_user=user)
         except Restaurant.DoesNotExist:
             return None
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Item]:
         restaurant = self._get_restaurant()
         if not restaurant:
             return Item.objects.none()
         return restaurant.items.all().order_by("category__view_order", "view_order", "name")
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: drf_serializers.BaseSerializer) -> None:
         restaurant = self._get_restaurant()
         if not restaurant:
             raise drf_serializers.ValidationError("Invalid or missing restaurant_id.")
@@ -262,8 +274,9 @@ class SellerItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerItemSerializer
 
-    def get_queryset(self):
-        return Item.objects.filter(restaurant__owner_user=self.request.user)
+    def get_queryset(self) -> QuerySet[Item]:
+        user = get_authenticated_user(self.request)
+        return Item.objects.filter(restaurant__owner_user=user)
 
 
 class SellerItemStatsView(APIView):
@@ -287,10 +300,11 @@ class SellerItemStatsView(APIView):
         },
         description="Return basic sales statistics for a menu item.",
     )
-    def get(self, request, pk: int):
+    def get(self, request: Request, pk: int) -> Response:
+        user = get_authenticated_user(request)
         try:
             item = Item.objects.select_related("restaurant").get(
-                id=pk, restaurant__owner_user=request.user
+                id=pk, restaurant__owner_user=user
             )
         except Item.DoesNotExist:
             return Response(
@@ -324,5 +338,3 @@ class SellerItemStatsView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-

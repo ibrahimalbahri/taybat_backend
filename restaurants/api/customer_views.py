@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from django.db.models import QuerySet
+from typing import cast
 from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticated
 
@@ -16,7 +20,7 @@ class CustomerRestaurantListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "address", "phone"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Restaurant]:
         # Only show active restaurants (adjust if you want customers to see pending)
         return Restaurant.objects.filter(status="ACTIVE").order_by("id")
 
@@ -33,8 +37,8 @@ class CustomerRestaurantDetailView(generics.RetrieveAPIView):
         )
     )
 
-    def get_object(self):
-        restaurant = super().get_object()
+    def get_object(self) -> Restaurant:
+        restaurant = cast(Restaurant, super().get_object())
         # Ensure nested ordering is deterministic
         restaurant.categories.all().order_by("view_order", "name")
         return restaurant
@@ -47,7 +51,7 @@ class CustomerItemSearchView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "description", "ingredients"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Item]:
         qs = (
             Item.objects
             .select_related("restaurant", "category")

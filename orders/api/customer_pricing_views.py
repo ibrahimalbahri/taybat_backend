@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from decimal import Decimal
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
@@ -14,6 +17,7 @@ from orders.api.pricing_serializers import (
     PriceQuoteResponseSerializer,
 )
 from orders.services.pricing import calculate_quote
+from taybat_backend.typing import get_authenticated_user
 
 
 class TaxiPricePreviewView(APIView):
@@ -28,20 +32,21 @@ class TaxiPricePreviewView(APIView):
         responses={200: PriceQuoteResponseSerializer},
         description="Preview taxi pricing based on addresses and vehicle type"
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = TaxiPricePreviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        user = get_authenticated_user(request)
 
         # Load and validate addresses (must belong to current user)
         try:
             pickup_address = Address.objects.get(
                 id=data["pickup_address_id"],
-                user=request.user
+                user=user,
             )
             dropoff_address = Address.objects.get(
                 id=data["dropoff_address_id"],
-                user=request.user
+                user=user,
             )
         except Address.DoesNotExist:
             return Response(
@@ -94,20 +99,21 @@ class ShippingPricePreviewView(APIView):
         responses={200: PriceQuoteResponseSerializer},
         description="Preview shipping pricing based on addresses, delivery type, and package details"
     )
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = ShippingPricePreviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        user = get_authenticated_user(request)
 
         # Load and validate addresses (must belong to current user)
         try:
             pickup_address = Address.objects.get(
                 id=data["pickup_address_id"],
-                user=request.user
+                user=user,
             )
             dropoff_address = Address.objects.get(
                 id=data["dropoff_address_id"],
-                user=request.user
+                user=user,
             )
         except Address.DoesNotExist:
             return Response(
@@ -150,4 +156,3 @@ class ShippingPricePreviewView(APIView):
         response_serializer.is_valid(raise_exception=True)
 
         return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
-

@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from restaurants.models import Coupon, CouponUsage
+from orders.models import Order
 
 
 class CouponError(Exception):
@@ -108,7 +109,7 @@ def compute_discount(*, subtotal: Decimal, percentage: int) -> Decimal:
 @transaction.atomic
 def apply_coupon_to_order(
     *,
-    order,
+    order: Order,
     user_id: int,
     code: str,
 ) -> CouponApplicationResult:

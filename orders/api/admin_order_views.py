@@ -1,7 +1,11 @@
+from __future__ import annotations
+
+from django.db.models import QuerySet
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,6 +18,7 @@ from orders.services.admin_orders import (
     export_orders_to_excel,
     export_orders_to_pdf,
 )
+from taybat_backend.typing import get_authenticated_user
 
 
 class AdminOrderFilterSerializer(serializers.Serializer):
@@ -40,11 +45,11 @@ class AdminOrderListView(generics.ListAPIView):
         responses=OrderOutputSerializer(many=True),
         description="Admin order dashboard with filters and pagination.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
-        params = {
+    def get_queryset(self) -> QuerySet[Order]:
+        params: dict[str, object] = {
             "status": self.request.query_params.get("status"),
             "order_type": self.request.query_params.get("order_type"),
             "restaurant_id": self.request.query_params.get("restaurant_id"),
@@ -79,8 +84,8 @@ class AdminOrderExportExcelView(APIView):
         },
         description="Export filtered orders to an Excel file.",
     )
-    def get(self, request):
-        params = {
+    def get(self, request: Request) -> Response:
+        params: dict[str, object] = {
             "status": request.query_params.get("status"),
             "order_type": request.query_params.get("order_type"),
             "restaurant_id": request.query_params.get("restaurant_id"),
@@ -95,7 +100,8 @@ class AdminOrderExportExcelView(APIView):
         if to_val:
             params["to"] = parse_datetime(to_val)
 
-        export = export_orders_to_excel(request.user, params)
+        user = get_authenticated_user(request)
+        export = export_orders_to_excel(user, params)
         return Response(
             {
                 "export_id": export.id,
@@ -122,8 +128,8 @@ class AdminOrderExportPdfView(APIView):
         },
         description="Export filtered orders to a PDF file.",
     )
-    def get(self, request):
-        params = {
+    def get(self, request: Request) -> Response:
+        params: dict[str, object] = {
             "status": request.query_params.get("status"),
             "order_type": request.query_params.get("order_type"),
             "restaurant_id": request.query_params.get("restaurant_id"),
@@ -138,7 +144,8 @@ class AdminOrderExportPdfView(APIView):
         if to_val:
             params["to"] = parse_datetime(to_val)
 
-        export = export_orders_to_pdf(request.user, params)
+        user = get_authenticated_user(request)
+        export = export_orders_to_pdf(user, params)
         return Response(
             {
                 "export_id": export.id,
@@ -166,15 +173,13 @@ class AdminOrderStatusHistoryView(generics.ListAPIView):
         responses=AdminOrderStatusHistorySerializer(many=True),
         description="Return status transition history for an order.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[OrderStatusHistory]:
         order_id = self.kwargs["pk"]
         return (
             OrderStatusHistory.objects.filter(order_id=order_id)
             .order_by("timestamp")
             .all()
         )
-
-

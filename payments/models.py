@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 # payments/models.py
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.core.validators import MinValueValidator
-from decimal import Decimal
 
 
 class PaymentProvider(models.TextChoices):
@@ -43,8 +46,9 @@ class PaymentMethod(models.Model):
             models.Index(fields=["user", "created_at"]),
         ]
 
-    def __str__(self):
-        return f"{self.user_id} {self.provider} ****{self.last4 or '----'}" # type: ignore
+    def __str__(self) -> str:
+        last4 = self.last4 or "----"
+        return f"{self.user_id} {self.provider} ****{last4}"
 
 
 class Transaction(models.Model):
@@ -67,5 +71,5 @@ class Transaction(models.Model):
             models.Index(fields=["type", "status"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.type} {self.status} {self.amount} {self.currency}"

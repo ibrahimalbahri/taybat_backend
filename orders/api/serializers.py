@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from decimal import Decimal
 from rest_framework import serializers
 
@@ -19,7 +21,7 @@ class FoodCheckoutSerializer(serializers.Serializer):
     coupon_code = serializers.CharField(required=False, allow_blank=True)
     items = CartItemInputSerializer(many=True)
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, object]) -> dict[str, object]:
         if not attrs["items"]:
             raise serializers.ValidationError("Cart is empty.")
         return attrs

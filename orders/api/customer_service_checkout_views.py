@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from decimal import Decimal
 
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,6 +27,7 @@ from orders.api.serializers import OrderOutputSerializer
 from orders.services.pricing import calculate_quote
 from payments.models import PaymentMethod
 from payments.services.payment_service import PaymentService, PaymentError
+from taybat_backend.typing import get_authenticated_user
 
 
 class TaxiCheckoutView(APIView):
@@ -39,18 +43,19 @@ class TaxiCheckoutView(APIView):
         description="Create a TAXI order for the authenticated customer",
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = TaxiCheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        user = get_authenticated_user(request)
 
         # Load and validate addresses (must belong to current user)
         try:
             pickup_address = Address.objects.get(
-                id=data["pickup_address_id"], user=request.user
+                id=data["pickup_address_id"], user=user
             )
             dropoff_address = Address.objects.get(
-                id=data["dropoff_address_id"], user=request.user
+                id=data["dropoff_address_id"], user=user
             )
         except Address.DoesNotExist:
             return Response(
@@ -80,7 +85,7 @@ class TaxiCheckoutView(APIView):
         # Create order
         order = Order.objects.create(
             order_type=OrderType.TAXI,
-            customer=request.user,
+            customer=user,
             restaurant=None,
             status=OrderStatus.PENDING,
             pickup_address=pickup_address,
@@ -98,7 +103,7 @@ class TaxiCheckoutView(APIView):
         try:
             payment_method = PaymentMethod.objects.get(
                 id=data["payment_method_id"],
-                user=request.user,
+                user=user,
             )
         except PaymentMethod.DoesNotExist:
             return Response(
@@ -111,7 +116,7 @@ class TaxiCheckoutView(APIView):
         try:
             PaymentService.capture_order_payment(
                 order=order,
-                user=request.user,
+                user=user,
                 payment_method=payment_method,
                 currency="EUR",
                 idempotency_key=idempotency_key,
@@ -146,18 +151,19 @@ class ShippingCheckoutView(APIView):
         description="Create a SHIPPING order for the authenticated customer",
     )
     @transaction.atomic
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = ShippingCheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        user = get_authenticated_user(request)
 
         # Load and validate addresses (must belong to current user)
         try:
             pickup_address = Address.objects.get(
-                id=data["pickup_address_id"], user=request.user
+                id=data["pickup_address_id"], user=user
             )
             dropoff_address = Address.objects.get(
-                id=data["dropoff_address_id"], user=request.user
+                id=data["dropoff_address_id"], user=user
             )
         except Address.DoesNotExist:
             return Response(
@@ -189,7 +195,7 @@ class ShippingCheckoutView(APIView):
         # Create order
         order = Order.objects.create(
             order_type=OrderType.SHIPPING,
-            customer=request.user,
+            customer=user,
             restaurant=None,
             status=OrderStatus.PENDING,
             pickup_address=pickup_address,
@@ -207,7 +213,7 @@ class ShippingCheckoutView(APIView):
         try:
             payment_method = PaymentMethod.objects.get(
                 id=data["payment_method_id"],
-                user=request.user,
+                user=user,
             )
         except PaymentMethod.DoesNotExist:
             return Response(
@@ -220,7 +226,7 @@ class ShippingCheckoutView(APIView):
         try:
             PaymentService.capture_order_payment(
                 order=order,
-                user=request.user,
+                user=user,
                 payment_method=payment_method,
                 currency="EUR",
                 idempotency_key=idempotency_key,
@@ -248,5 +254,3 @@ class ShippingCheckoutView(APIView):
             OrderOutputSerializer(order).data,
             status=status.HTTP_201_CREATED,
         )
-
-

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import secrets
+from typing import Any, cast
 from datetime import timedelta
 
 from django.conf import settings
@@ -6,6 +9,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -21,7 +25,7 @@ class BlacklistRefreshView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = BlacklistRefreshSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({"detail": "Refresh token blacklisted."}, status=status.HTTP_200_OK)
@@ -31,7 +35,7 @@ class OtpRequestView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = OtpRequestSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         phone = serializer.validated_data["phone"]
@@ -62,7 +66,7 @@ class OtpVerifyView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = OtpVerifySerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         phone = serializer.validated_data["phone"]
@@ -93,7 +97,8 @@ class OtpVerifyView(generics.GenericAPIView):
         CustomerProfile.objects.get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)
+        access_token = cast(Any, refresh).access_token
         return Response(
-            {"refresh": str(refresh), "access": str(refresh.access_token)},
+            {"refresh": str(refresh), "access": str(access_token)},
             status=status.HTTP_200_OK,
         )

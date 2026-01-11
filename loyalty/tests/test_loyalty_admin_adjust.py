@@ -1,11 +1,15 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import Any, cast
+
 import pytest
 from rest_framework.test import APIClient
 from loyalty.models import LoyaltyPoint, LoyaltySource
 from rest_framework.response import Response
 
+
 @pytest.mark.django_db
-def test_admin_can_adjust_loyalty(admin_user, customer_user):
+def test_admin_can_adjust_loyalty(admin_user: Any, customer_user: Any) -> None:
     c = APIClient()
     c.force_authenticate(admin_user)
 

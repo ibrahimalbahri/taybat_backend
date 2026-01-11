@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 # payments/services/refund_service.py
 from decimal import Decimal
+from typing import Optional
+
 from django.db import transaction
 
 from payments.gateways.selector import get_gateway
 from payments.models import Transaction, TransactionType, TransactionStatus
+from orders.models import Order
+from users.models import User
 
 
 class RefundError(Exception):
@@ -12,18 +18,26 @@ class RefundError(Exception):
 
 class RefundService:
     @staticmethod
-    def _get_captured_amount(order):
+    def _get_captured_amount(order: Order) -> Decimal:
         captured = Transaction.objects.filter(order=order, type=TransactionType.PAYMENT, status=TransactionStatus.SUCCEEDED)
         return sum((t.amount for t in captured), Decimal("0.00"))
 
     @staticmethod
-    def _get_refunded_amount(order):
+    def _get_refunded_amount(order: Order) -> Decimal:
         refunded = Transaction.objects.filter(order=order, type=TransactionType.REFUND, status=TransactionStatus.SUCCEEDED)
         return sum((t.amount for t in refunded), Decimal("0.00"))
 
     @staticmethod
     @transaction.atomic
-    def refund_order(*, order, admin_user, amount: Decimal, reason: str | None, currency: str, idempotency_key: str | None):
+    def refund_order(
+        *,
+        order: Order,
+        admin_user: User,
+        amount: Decimal,
+        reason: Optional[str],
+        currency: str,
+        idempotency_key: Optional[str],
+    ) -> Transaction:
         if amount <= 0:
             raise RefundError("Refund amount must be > 0.")
 
@@ -40,6 +54,8 @@ class RefundService:
         ).order_by("-created_at").first()
         if not payment_tx:
             raise RefundError("No captured payment exists for this order.")
+        if not payment_tx.provider_ref:
+            raise RefundError("Payment transaction missing provider reference.")
 
         captured = RefundService._get_captured_amount(order)
         refunded = RefundService._get_refunded_amount(order)

@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -52,10 +56,10 @@ class AdminCouponListView(generics.ListAPIView):
         responses=AdminCouponSerializer(many=True),
         description="List coupons with admin-level filters.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Coupon]:
         qs = Coupon.objects.select_related("restaurant").all()
         restaurant_id = self.request.query_params.get("restaurant_id")
         if restaurant_id:
@@ -91,7 +95,7 @@ class AdminCouponDetailView(generics.RetrieveAPIView):
         responses=AdminCouponSerializer,
         description="Retrieve coupon details.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
 
@@ -102,7 +106,7 @@ class AdminCouponToggleView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdmin]
 
-    def _toggle(self, request, pk: int, is_active: bool):
+    def _toggle(self, request: Request, pk: int, is_active: bool) -> Response:
         try:
             coupon = Coupon.objects.get(pk=pk)
         except Coupon.DoesNotExist:
@@ -125,7 +129,7 @@ class AdminCouponDisableView(AdminCouponToggleView):
         responses={"200": serializers.DictField()},
         description="Disable a coupon.",
     )
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
         return self._toggle(request, pk, False)
 
 
@@ -139,7 +143,7 @@ class AdminCouponEnableView(AdminCouponToggleView):
         responses={"200": serializers.DictField()},
         description="Enable a coupon.",
     )
-    def post(self, request, pk: int):
+    def post(self, request: Request, pk: int) -> Response:
         return self._toggle(request, pk, True)
 
 
@@ -164,10 +168,10 @@ class AdminCouponUsageView(generics.ListAPIView):
         responses=AdminCouponUsageSerializer(many=True),
         description="List coupon usage for audit.",
     )
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[CouponUsage]:
         coupon_id = self.kwargs["pk"]
         qs = CouponUsage.objects.select_related("user", "order").filter(
             coupon_id=coupon_id
@@ -182,5 +186,4 @@ class AdminCouponUsageView(generics.ListAPIView):
         if user_id:
             qs = qs.filter(user_id=user_id)
         return qs.order_by("created_at")
-
 

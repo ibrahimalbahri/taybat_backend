@@ -1,10 +1,15 @@
-from typing import cast
+from __future__ import annotations
+
+from typing import Any, cast
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework.response import Response
+
+
 @pytest.mark.django_db
-def test_customer_can_create_payment_method(customer_user):
+def test_customer_can_create_payment_method(customer_user: Any) -> None:
     c = APIClient()
     c.force_authenticate(customer_user)
 
@@ -25,7 +30,7 @@ def test_customer_can_create_payment_method(customer_user):
     # assert r.data["last4"] == "4242"
 
 @pytest.mark.django_db
-def test_reject_pan_fields(customer_user):
+def test_reject_pan_fields(customer_user: Any) -> None:
     c = APIClient()
     c.force_authenticate(customer_user)
 

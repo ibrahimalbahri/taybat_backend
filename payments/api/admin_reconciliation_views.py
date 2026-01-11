@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 # payments/api/admin_reconciliation_views.py
 from decimal import Decimal
+
 from django.db.models import Sum
-from rest_framework import permissions, generics
+from rest_framework import generics
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from payments.models import Transaction, TransactionType, TransactionStatus
@@ -11,7 +15,7 @@ from users.permissions import IsAdmin
 class AdminReconciliationOrdersView(generics.GenericAPIView):
     permission_classes = [IsAdmin]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         from orders.models import Order  # adjust
 
         qs = Order.objects.all().order_by("-created_at")
