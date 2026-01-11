@@ -17,8 +17,12 @@ from users.api.serializers import (
     BlacklistRefreshSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
+    CustomerProfileUpdateSerializer,
+    SellerProfileUpdateSerializer,
 )
 from users.models import CustomerProfile, User
+from users.permissions import IsCustomer, IsSeller
+from taybat_backend.typing import get_authenticated_user
 
 
 class BlacklistRefreshView(generics.GenericAPIView):
@@ -100,5 +104,51 @@ class OtpVerifyView(generics.GenericAPIView):
         access_token = cast(Any, refresh).access_token
         return Response(
             {"refresh": str(refresh), "access": str(access_token)},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CustomerProfileUpdateView(generics.GenericAPIView):
+    permission_classes = [IsCustomer]
+    serializer_class = CustomerProfileUpdateSerializer
+
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        user = get_authenticated_user(request)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        for field in ("name", "phone", "age"):
+            if field in data:
+                setattr(user, field, data[field])
+
+        user.save(update_fields=list(data.keys()))
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SellerProfileUpdateView(generics.GenericAPIView):
+    permission_classes = [IsSeller]
+    serializer_class = SellerProfileUpdateSerializer
+
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        user = get_authenticated_user(request)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        for field in ("name", "phone", "age"):
+            if field in data:
+                setattr(user, field, data[field])
+
+        user.save(update_fields=list(data.keys()))
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
             status=status.HTTP_200_OK,
         )

@@ -1,7 +1,13 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-from users.api.views import BlacklistRefreshView, OtpRequestView, OtpVerifyView
+from users.api.views import (
+    BlacklistRefreshView,
+    OtpRequestView,
+    OtpVerifyView,
+    CustomerProfileUpdateView,
+    SellerProfileUpdateView,
+)
 
 urlpatterns = [
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -10,4 +16,6 @@ urlpatterns = [
     path("auth/token/blacklist/", BlacklistRefreshView.as_view(), name="token_blacklist"),
     path("auth/otp/request/", OtpRequestView.as_view(), name="otp_request"),
     path("auth/otp/verify/", OtpVerifyView.as_view(), name="otp_verify"),
+    path("customer/profile/", CustomerProfileUpdateView.as_view(), name="customer-profile-update"),
+    path("seller/profile/", SellerProfileUpdateView.as_view(), name="seller-profile-update"),
 ]

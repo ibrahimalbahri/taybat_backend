@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 
-from users.permissions import IsAdmin, IsApprovedDriver
+from users.permissions import IsAdmin, IsApprovedDriver, IsDriver
 from users.models import User
 from drivers.models import DriverProfile, DriverStatus
 from drivers.api import serializers
@@ -76,6 +76,70 @@ class DriverCreateView(APIView):
 
         response_serializer = serializers.DriverProfileSerializer(profile)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class DriverProfileUpdateView(APIView):
+    """
+    Update driver user + profile fields.
+    """
+    permission_classes = [IsAuthenticated, IsDriver]
+
+    @extend_schema(
+        request=serializers.DriverProfileUpdateSerializer,
+        responses={200: serializers.DriverProfileSerializer},
+        description="Update driver profile and basic user fields.",
+    )
+    @transaction.atomic
+    def patch(self, request: Request) -> Response:
+        serializer = serializers.DriverProfileUpdateSerializer(
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_fields = {"name", "phone", "age"}
+        profile_fields = {
+            "vehicle_type",
+            "accepts_food",
+            "accepts_shipping",
+            "accepts_taxi",
+            "driving_license",
+            "id_document",
+            "other_documents",
+        }
+
+        user_update_fields: list[str] = []
+        profile_update_fields: list[str] = []
+
+        for field in user_fields:
+            if field in data:
+                setattr(user, field, data[field])
+                user_update_fields.append(field)
+
+        for field in profile_fields:
+            if field in data:
+                setattr(profile, field, data[field])
+                profile_update_fields.append(field)
+
+        if user_update_fields:
+            user.save(update_fields=user_update_fields)
+        if profile_update_fields:
+            profile.save(update_fields=profile_update_fields)
+
+        return Response(
+            serializers.DriverProfileSerializer(profile).data,
+            status=status.HTTP_200_OK,
+        )
 
 class DriverOnlineToggleView(APIView):
     """

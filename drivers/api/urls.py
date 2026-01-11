@@ -7,6 +7,7 @@ from drivers.api.views import (
     DriverAcceptOrderView,
     DriverRejectOrderView,
     DriverUpdateOrderStatusView,
+    DriverProfileUpdateView,
 )
 from drivers.api.admin_verification_views import (
     AdminDriverVerificationQueueView,
@@ -41,6 +42,11 @@ urlpatterns = [
         "drivers/update-order-status/",
         DriverUpdateOrderStatusView.as_view(),
         name="driver-update-order-status",
+    ),
+    path(
+        "drivers/profile/",
+        DriverProfileUpdateView.as_view(),
+        name="driver-profile-update",
     ),
     path(
         "drivers/",
