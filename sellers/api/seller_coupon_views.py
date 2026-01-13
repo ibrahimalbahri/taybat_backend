@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from django.db.models import QuerySet
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -17,18 +18,26 @@ from users.permissions import IsSeller
 from taybat_backend.typing import get_authenticated_user
 
 
-class SellerCouponCreateView(APIView):
+class SellerCouponListView(generics.ListCreateAPIView):
     """
-    Create a coupon for a restaurant owned by the seller.
+    List coupons for restaurants owned by the seller.
     """
     permission_classes = [IsAuthenticated, IsSeller]
+    serializer_class = SellerCouponSerializer
+
+    @extend_schema(
+        responses={200: SellerCouponSerializer(many=True)},
+        description="List coupons for seller-owned restaurants.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
 
     @extend_schema(
         request=SellerCouponCreateSerializer,
         responses={201: SellerCouponSerializer},
         description="Create a coupon for a seller-owned restaurant.",
     )
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = SellerCouponCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -69,6 +78,17 @@ class SellerCouponCreateView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+    def get_queryset(self) -> QuerySet[Coupon]:
+        user = get_authenticated_user(self.request)
+        qs = Coupon.objects.select_related("restaurant").filter(
+            restaurant__owner_user=user
+        )
+        restaurant_id = self.request.query_params.get("restaurant_id")
+        if restaurant_id:
+            qs = qs.filter(restaurant_id=restaurant_id)
+        return qs.order_by("-created_at")
+
+
 
 class SellerCouponUpdateView(APIView):
     """
@@ -81,6 +101,20 @@ class SellerCouponUpdateView(APIView):
         responses={200: SellerCouponSerializer},
         description="Update a coupon for a seller-owned restaurant.",
     )
+    def get(self, request: Request, pk: int) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            coupon = Coupon.objects.select_related("restaurant").get(
+                id=pk, restaurant__owner_user=user
+            )
+        except Coupon.DoesNotExist:
+            return Response(
+                {"detail": "Coupon not found or does not belong to you."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(SellerCouponSerializer(coupon).data, status=status.HTTP_200_OK)
+
     def patch(self, request: Request, pk: int) -> Response:
         serializer = SellerCouponUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -119,3 +153,16 @@ class SellerCouponUpdateView(APIView):
         coupon.save(update_fields=list(data.keys()))
 
         return Response(SellerCouponSerializer(coupon).data, status=status.HTTP_200_OK)
+
+    def delete(self, request: Request, pk: int) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            coupon = Coupon.objects.get(id=pk, restaurant__owner_user=user)
+        except Coupon.DoesNotExist:
+            return Response(
+                {"detail": "Coupon not found or does not belong to you."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        coupon.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
