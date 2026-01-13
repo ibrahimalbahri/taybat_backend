@@ -1,0 +1,5 @@
+# Development dependencies for the Django project
+django-stubs==4.2.7
+django-stubs-ext==4.2.7
+mypy==1.11.2
+djangorestframework-stubs==3.15.3
