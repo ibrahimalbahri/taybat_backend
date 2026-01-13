@@ -34,6 +34,8 @@ class AdminCouponSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+class ToggleSerializer(serializers.Serializer):
+    is_active = serializers.BooleanField()
 
 class AdminCouponFilterSerializer(serializers.Serializer):
     restaurant_id = serializers.IntegerField(required=False)
@@ -125,11 +127,13 @@ class AdminCouponDisableView(AdminCouponToggleView):
     """
 
     @extend_schema(
-        request=None,
+        request=ToggleSerializer,
         responses={"200": serializers.DictField()},
         description="Disable a coupon.",
     )
     def post(self, request: Request, pk: int) -> Response:
+        serializer = ToggleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         return self._toggle(request, pk, False)
 
 
@@ -139,11 +143,13 @@ class AdminCouponEnableView(AdminCouponToggleView):
     """
 
     @extend_schema(
-        request=None,
+        request=ToggleSerializer,
         responses={"200": serializers.DictField()},
         description="Enable a coupon.",
     )
     def post(self, request: Request, pk: int) -> Response:
+        serializer = ToggleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         return self._toggle(request, pk, True)
 
 
@@ -186,4 +192,3 @@ class AdminCouponUsageView(generics.ListAPIView):
         if user_id:
             qs = qs.filter(user_id=user_id)
         return qs.order_by("created_at")
-
