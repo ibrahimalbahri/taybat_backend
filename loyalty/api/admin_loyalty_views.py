@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from loyalty.services.loyalty_service import LoyaltyService
 from loyalty.models import LoyaltyPoint
 from users.permissions import IsAdmin
-from .admin_loyalty_serializers import AdminLoyaltyAdjustSerializer
+from .admin_loyalty_serializers import AdminLoyaltyAdjustSerializer, AdminLoyaltyListSerializer
 from taybat_backend.typing import get_authenticated_user
 
 
@@ -34,6 +34,7 @@ class AdminLoyaltyAdjustView(generics.GenericAPIView):
 
 class AdminLoyaltyListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
+    serializer_class = AdminLoyaltyListSerializer
 
     def get_queryset(self) -> QuerySet[LoyaltyPoint]:
         qs = LoyaltyPoint.objects.select_related("user", "order").order_by("-created_at")
@@ -45,16 +46,5 @@ class AdminLoyaltyListView(generics.ListAPIView):
 
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         qs = self.get_queryset()[:500]  # keep safe; add pagination if needed
-        data = [
-            {
-                "id": x.pk,
-                "user_id": x.user_id,
-                "order_id": x.order_id,
-                "points": x.points,
-                "source": x.source,
-                "note": x.note,
-                "created_at": x.created_at,
-            }
-            for x in qs
-        ]
-        return Response(data)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
