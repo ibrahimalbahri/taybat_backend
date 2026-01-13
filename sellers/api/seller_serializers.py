@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
+from django.db.models import Sum, QuerySet
+from django.utils import timezone
 from rest_framework import serializers
 
+from orders.models import Order, OrderStatus
 from sellers.models import Category, Item, Coupon, Restaurant
 
 
@@ -94,6 +99,10 @@ class SellerCouponUpdateSerializer(serializers.ModelSerializer):
 
 
 class SellerRestaurantSerializer(serializers.ModelSerializer):
+    total_orders_today = serializers.SerializerMethodField()
+    total_revenue_today = serializers.SerializerMethodField()
+    pending_orders_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Restaurant
         fields = [
@@ -105,8 +114,25 @@ class SellerRestaurantSerializer(serializers.ModelSerializer):
             "phone",
             "status",
             "created_at",
+            "total_orders_today",
+            "total_revenue_today",
+            "pending_orders_count",
         ]
         read_only_fields = ["status", "created_at"]
+
+    def _today_queryset(self, obj: Restaurant) -> QuerySet[Order]:
+        today = timezone.localdate()
+        return Order.objects.filter(restaurant=obj, created_at__date=today)
+
+    def get_total_orders_today(self, obj: Restaurant) -> int:
+        return self._today_queryset(obj).count()
+
+    def get_total_revenue_today(self, obj: Restaurant) -> Decimal:
+        total = self._today_queryset(obj).aggregate(total=Sum("total_amount"))["total"]
+        return total or Decimal("0.00")
+
+    def get_pending_orders_count(self, obj: Restaurant) -> int:
+        return Order.objects.filter(restaurant=obj, status=OrderStatus.PENDING).count()
 
 
 class SellerRestaurantCreateUpdateSerializer(serializers.ModelSerializer):
