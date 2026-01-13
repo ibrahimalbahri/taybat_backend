@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,6 +27,7 @@ from users.api.serializers import (
     UserMeUpdateSerializer,
 )
 from users.models import Address, CustomerProfile, DriverProfile, User
+from django.db.models import QuerySet
 from users.permissions import IsCustomer, IsSeller, IsDriver, IsAuthenticated
 from taybat_backend.typing import get_authenticated_user
 
@@ -220,16 +221,16 @@ class AddressListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Address]:
         user = get_authenticated_user(self.request)
         return Address.objects.filter(user=user).order_by("-created_at")
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[serializers.BaseSerializer]:
         if self.request.method == "POST":
             return AddressCreateUpdateSerializer
         return AddressSerializer
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
         user = get_authenticated_user(self.request)
         serializer.save(user=user)
 
@@ -238,11 +239,11 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Address]:
         user = get_authenticated_user(self.request)
         return Address.objects.filter(user=user)
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[serializers.BaseSerializer]:
         if self.request.method in {"PUT", "PATCH"}:
             return AddressCreateUpdateSerializer
         return AddressSerializer

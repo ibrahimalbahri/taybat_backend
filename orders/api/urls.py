@@ -20,6 +20,10 @@ from orders.api.admin_order_views import (
     AdminOrderExportPdfView,
     AdminOrderStatusHistoryView,
 )
+from orders.api.seller_order_export_views import (
+    SellerOrderExportExcelView,
+    SellerOrderExportPdfView,
+)
 
 
 urlpatterns = [
@@ -60,6 +64,16 @@ urlpatterns = [
         "seller/orders/manual/",
         SellerManualOrderCreateView.as_view(),
         name="seller-manual-order-create",
+    ),
+    path(
+        "seller/orders/export/excel/",
+        SellerOrderExportExcelView.as_view(),
+        name="seller-orders-export-excel",
+    ),
+    path(
+        "seller/orders/export/pdf/",
+        SellerOrderExportPdfView.as_view(),
+        name="seller-orders-export-pdf",
     ),
     # Admin order dashboard + exports
     path(

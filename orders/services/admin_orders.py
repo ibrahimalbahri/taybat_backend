@@ -73,6 +73,11 @@ def build_admin_order_queryset(filters: dict[str, Any]) -> QuerySet[Order]:
     return qs.order_by("-created_at")
 
 
+def build_seller_order_queryset(filters: dict[str, Any], seller_user: User) -> QuerySet[Order]:
+    qs = build_admin_order_queryset(filters)
+    return qs.filter(restaurant__owner_user=seller_user)
+
+
 def _ensure_export_dir() -> str:
     base_dir = getattr(settings, "BASE_DIR", None)
     if base_dir is None:
@@ -82,13 +87,12 @@ def _ensure_export_dir() -> str:
     return export_dir
 
 
-def export_orders_to_excel(admin_user: User, filters: dict[str, Any]) -> Export:
+def _export_orders_to_excel(user: User, qs: QuerySet[Order], filters: dict[str, Any]) -> Export:
     """
     Export filtered orders to an Excel file (tabular).
     """
     from openpyxl import Workbook
 
-    qs = build_admin_order_queryset(filters)
     export_dir = _ensure_export_dir()
     timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
     filename = f"orders-{timestamp}.xlsx"
@@ -135,14 +139,19 @@ def export_orders_to_excel(admin_user: User, filters: dict[str, Any]) -> Export:
     wb.save(file_path)
 
     export = Export.objects.create(
-        admin=admin_user,
+        admin=user,
         file_path=file_path,
         filter_params=filters,
     )
     return export
 
 
-def export_orders_to_pdf(admin_user: User, filters: dict[str, Any]) -> Export:
+def export_orders_to_excel(admin_user: User, filters: dict[str, Any]) -> Export:
+    qs = build_admin_order_queryset(filters)
+    return _export_orders_to_excel(admin_user, qs, filters)
+
+
+def _export_orders_to_pdf(user: User, qs: QuerySet[Order], filters: dict[str, Any]) -> Export:
     """
     Export filtered orders to a simple PDF table.
     """
@@ -150,7 +159,6 @@ def export_orders_to_pdf(admin_user: User, filters: dict[str, Any]) -> Export:
     from reportlab.lib.units import mm
     from reportlab.pdfgen import canvas
 
-    qs = build_admin_order_queryset(filters)
     export_dir = _ensure_export_dir()
     timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
     filename = f"orders-{timestamp}.pdf"
@@ -213,9 +221,29 @@ def export_orders_to_pdf(admin_user: User, filters: dict[str, Any]) -> Export:
     c.save()
 
     export = Export.objects.create(
-        admin=admin_user,
+        admin=user,
         file_path=file_path,
         filter_params=filters,
     )
     return export
 
+
+def export_orders_to_pdf(admin_user: User, filters: dict[str, Any]) -> Export:
+    qs = build_admin_order_queryset(filters)
+    return _export_orders_to_pdf(admin_user, qs, filters)
+
+
+def export_orders_to_excel_for_queryset(
+    user: User,
+    qs: QuerySet[Order],
+    filters: dict[str, Any],
+) -> Export:
+    return _export_orders_to_excel(user, qs, filters)
+
+
+def export_orders_to_pdf_for_queryset(
+    user: User,
+    qs: QuerySet[Order],
+    filters: dict[str, Any],
+) -> Export:
+    return _export_orders_to_pdf(user, qs, filters)
