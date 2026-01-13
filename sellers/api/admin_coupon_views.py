@@ -128,7 +128,7 @@ class AdminCouponDisableView(AdminCouponToggleView):
 
     @extend_schema(
         request=ToggleSerializer,
-        responses={"200": serializers.DictField()},
+        responses={200: ToggleSerializer},
         description="Disable a coupon.",
     )
     def post(self, request: Request, pk: int) -> Response:
@@ -144,7 +144,7 @@ class AdminCouponEnableView(AdminCouponToggleView):
 
     @extend_schema(
         request=ToggleSerializer,
-        responses={"200": serializers.DictField()},
+        responses={200: ToggleSerializer},
         description="Enable a coupon.",
     )
     def post(self, request: Request, pk: int) -> Response:

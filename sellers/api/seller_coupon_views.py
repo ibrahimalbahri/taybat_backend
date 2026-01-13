@@ -92,14 +92,13 @@ class SellerCouponListView(generics.ListCreateAPIView):
 
 class SellerCouponUpdateView(APIView):
     """
-    Update a coupon owned by the seller.
+    Retrieve, update, or delete a coupon owned by the seller.
     """
     permission_classes = [IsAuthenticated, IsSeller]
 
     @extend_schema(
-        request=SellerCouponUpdateSerializer,
         responses={200: SellerCouponSerializer},
-        description="Update a coupon for a seller-owned restaurant.",
+        description="Retrieve a coupon for a seller-owned restaurant.",
     )
     def get(self, request: Request, pk: int) -> Response:
         user = get_authenticated_user(request)
@@ -115,6 +114,11 @@ class SellerCouponUpdateView(APIView):
 
         return Response(SellerCouponSerializer(coupon).data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        request=SellerCouponUpdateSerializer,
+        responses={200: SellerCouponSerializer},
+        description="Update a coupon for a seller-owned restaurant.",
+    )
     def patch(self, request: Request, pk: int) -> Response:
         serializer = SellerCouponUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -154,6 +158,10 @@ class SellerCouponUpdateView(APIView):
 
         return Response(SellerCouponSerializer(coupon).data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        responses={204: None},
+        description="Delete a coupon for a seller-owned restaurant.",
+    )
     def delete(self, request: Request, pk: int) -> Response:
         user = get_authenticated_user(request)
         try:

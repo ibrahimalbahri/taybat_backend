@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import QuerySet
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -21,6 +22,11 @@ from taybat_backend.typing import get_authenticated_user
 class CustomerFoodCheckoutView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
 
+    @extend_schema(
+        request=FoodCheckoutSerializer,
+        responses={201: OrderOutputSerializer},
+        description="Create a FOOD order for the authenticated customer.",
+    )
     @transaction.atomic
     def post(self, request: Request) -> Response:
         serializer = FoodCheckoutSerializer(data=request.data)

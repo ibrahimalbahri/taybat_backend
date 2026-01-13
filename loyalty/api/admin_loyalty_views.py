@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # loyalty/api/admin_loyalty_views.py
 from django.db.models import QuerySet
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,7 +10,11 @@ from rest_framework.response import Response
 from loyalty.services.loyalty_service import LoyaltyService
 from loyalty.models import LoyaltyPoint
 from users.permissions import IsAdmin
-from .admin_loyalty_serializers import AdminLoyaltyAdjustSerializer, AdminLoyaltyListSerializer
+from .admin_loyalty_serializers import (
+    AdminLoyaltyAdjustSerializer,
+    AdminLoyaltyAdjustResponseSerializer,
+    AdminLoyaltyListSerializer,
+)
 from taybat_backend.typing import get_authenticated_user
 
 
@@ -17,6 +22,11 @@ class AdminLoyaltyAdjustView(generics.GenericAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminLoyaltyAdjustSerializer
 
+    @extend_schema(
+        request=AdminLoyaltyAdjustSerializer,
+        responses={200: AdminLoyaltyAdjustResponseSerializer},
+        description="Adjust loyalty points for a user.",
+    )
     def post(self, request: Request) -> Response:
         from users.models import User  # adjust
 

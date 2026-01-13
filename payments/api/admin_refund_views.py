@@ -4,12 +4,13 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db import transaction
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from payments.services.refund_service import RefundService, RefundError
-from payments.api.admin_refund_serializers import AdminRefundSerializer
+from payments.api.admin_refund_serializers import AdminRefundSerializer, RefundResponseSerializer
 from loyalty.services.loyalty_service import LoyaltyService
 from users.permissions import IsAdmin
 from taybat_backend.typing import get_authenticated_user
@@ -19,6 +20,11 @@ class AdminOrderRefundView(generics.GenericAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminRefundSerializer
 
+    @extend_schema(
+        request=AdminRefundSerializer,
+        responses={200: RefundResponseSerializer},
+        description="Refund an order as admin and return the refund transaction metadata.",
+    )
     @transaction.atomic
     def post(self, request: Request, order_id: int) -> Response:
         from orders.models import Order  # adjust path

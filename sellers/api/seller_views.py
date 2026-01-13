@@ -350,6 +350,21 @@ class SellerRestaurantListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerRestaurantSerializer
 
+    @extend_schema(
+        responses={200: SellerRestaurantSerializer(many=True)},
+        description="List restaurants owned by the seller.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=SellerRestaurantCreateUpdateSerializer,
+        responses={201: SellerRestaurantSerializer},
+        description="Create a new restaurant for the seller.",
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().post(request, *args, **kwargs)
+
     def get_queryset(self) -> QuerySet[Restaurant]:
         user = get_authenticated_user(self.request)
         return Restaurant.objects.filter(owner_user=user).order_by("-created_at")
@@ -371,6 +386,36 @@ class SellerRestaurantDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerRestaurantSerializer
+
+    @extend_schema(
+        responses={200: SellerRestaurantSerializer},
+        description="Retrieve a restaurant owned by the seller.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=SellerRestaurantCreateUpdateSerializer,
+        responses={200: SellerRestaurantSerializer},
+        description="Update a restaurant owned by the seller.",
+    )
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(
+        request=SellerRestaurantCreateUpdateSerializer,
+        responses={200: SellerRestaurantSerializer},
+        description="Replace a restaurant owned by the seller.",
+    )
+    def put(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().put(request, *args, **kwargs)
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete a restaurant owned by the seller.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().delete(request, *args, **kwargs)
 
     def get_queryset(self) -> QuerySet[Restaurant]:
         user = get_authenticated_user(self.request)

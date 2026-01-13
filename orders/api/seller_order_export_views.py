@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from orders.api.admin_order_views import AdminOrderFilterSerializer
+from orders.api.serializers import ExportResponseSerializer
 from orders.services.admin_orders import (
     build_seller_order_queryset,
     export_orders_to_excel_for_queryset,
@@ -27,12 +28,7 @@ class SellerOrderExportExcelView(APIView):
 
     @extend_schema(
         parameters=[AdminOrderFilterSerializer],
-        responses={
-            200: serializers.DictField(
-                child=serializers.CharField(),
-                help_text="Export metadata including file path.",
-            )
-        },
+        responses={200: ExportResponseSerializer},
         description="Export seller orders to an Excel file.",
     )
     def get(self, request: Request) -> Response:
@@ -72,12 +68,7 @@ class SellerOrderExportPdfView(APIView):
 
     @extend_schema(
         parameters=[AdminOrderFilterSerializer],
-        responses={
-            200: serializers.DictField(
-                child=serializers.CharField(),
-                help_text="Export metadata including file path.",
-            )
-        },
+        responses={200: ExportResponseSerializer},
         description="Export seller orders to a PDF file.",
     )
     def get(self, request: Request) -> Response:

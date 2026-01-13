@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db import transaction
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -22,6 +23,11 @@ class DeviceTokenRegisterView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=DeviceTokenRegisterSerializer,
+        responses={200: DeviceTokenSerializer},
+        description="Register or update an FCM device token for the authenticated user.",
+    )
     @transaction.atomic
     def post(self, request: Request) -> Response:
         serializer = DeviceTokenRegisterSerializer(data=request.data)

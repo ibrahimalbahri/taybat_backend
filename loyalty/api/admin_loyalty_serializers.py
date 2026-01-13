@@ -16,3 +16,11 @@ class AdminLoyaltyListSerializer(serializers.ModelSerializer):
         model = LoyaltyPoint
         fields = ("id", "user_id", "order_id", "points", "source", "note", "created_at")
         read_only_fields = fields
+
+
+class AdminLoyaltyAdjustResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    points = serializers.IntegerField()
+    source = serializers.CharField()
+    created_at = serializers.DateTimeField()

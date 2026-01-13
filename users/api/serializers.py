@@ -15,6 +15,20 @@ class OtpVerifySerializer(serializers.Serializer):
     code = serializers.CharField()
 
 
+class DetailResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class OtpRequestResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    otp = serializers.CharField()
+
+
+class OtpVerifyResponseSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
 class BlacklistRefreshSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
@@ -50,6 +64,12 @@ class SellerProfileUpdateSerializer(serializers.Serializer):
         if User.objects.filter(phone=value).exclude(id=user.id).exists():
             raise serializers.ValidationError("A user with this phone already exists.")
         return value
+
+
+class BasicProfileResponseSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    phone = serializers.CharField()
+    age = serializers.IntegerField(allow_null=True)
 
 
 class DriverProfileSerializer(serializers.ModelSerializer):

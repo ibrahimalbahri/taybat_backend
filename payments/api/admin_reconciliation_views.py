@@ -4,17 +4,46 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db.models import Sum
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import generics
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from payments.models import Transaction, TransactionType, TransactionStatus
+from payments.api.admin_reconciliation_serializers import AdminReconciliationRowSerializer
 from users.permissions import IsAdmin
 
 
 class AdminReconciliationOrdersView(generics.GenericAPIView):
     permission_classes = [IsAdmin]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="from",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter orders created on/after this date (YYYY-MM-DD).",
+            ),
+            OpenApiParameter(
+                name="to",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter orders created on/before this date (YYYY-MM-DD).",
+            ),
+            OpenApiParameter(
+                name="status",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Order status filter.",
+            ),
+        ],
+        responses={200: AdminReconciliationRowSerializer(many=True)},
+        description="Return reconciliation data for recent orders.",
+    )
     def get(self, request: Request) -> Response:
         from orders.models import Order  # adjust
 

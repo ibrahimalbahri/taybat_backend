@@ -7,6 +7,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -17,6 +18,9 @@ from users.api.serializers import (
     BlacklistRefreshSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
+    DetailResponseSerializer,
+    OtpRequestResponseSerializer,
+    OtpVerifyResponseSerializer,
     CustomerProfileUpdateSerializer,
     SellerProfileUpdateSerializer,
     DriverProfileUpdateSerializer,
@@ -25,6 +29,7 @@ from users.api.serializers import (
     AddressCreateUpdateSerializer,
     UserMeSerializer,
     UserMeUpdateSerializer,
+    BasicProfileResponseSerializer,
 )
 from users.models import Address, CustomerProfile, DriverProfile, User
 from django.db.models import QuerySet
@@ -36,6 +41,11 @@ class BlacklistRefreshView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = BlacklistRefreshSerializer
 
+    @extend_schema(
+        request=BlacklistRefreshSerializer,
+        responses={200: DetailResponseSerializer},
+        description="Blacklist a refresh token.",
+    )
     def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -46,6 +56,11 @@ class OtpRequestView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = OtpRequestSerializer
 
+    @extend_schema(
+        request=OtpRequestSerializer,
+        responses={200: OtpRequestResponseSerializer},
+        description="Request an OTP to be sent to the user's phone.",
+    )
     def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -77,6 +92,11 @@ class OtpVerifyView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     serializer_class = OtpVerifySerializer
 
+    @extend_schema(
+        request=OtpVerifySerializer,
+        responses={200: OtpVerifyResponseSerializer},
+        description="Verify OTP and return JWT tokens.",
+    )
     def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -119,6 +139,11 @@ class CustomerProfileUpdateView(generics.GenericAPIView):
     permission_classes = [IsCustomer]
     serializer_class = CustomerProfileUpdateSerializer
 
+    @extend_schema(
+        request=CustomerProfileUpdateSerializer,
+        responses={200: BasicProfileResponseSerializer},
+        description="Update customer profile basics (name, phone, age).",
+    )
     def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -142,6 +167,11 @@ class SellerProfileUpdateView(generics.GenericAPIView):
     permission_classes = [IsSeller]
     serializer_class = SellerProfileUpdateSerializer
 
+    @extend_schema(
+        request=SellerProfileUpdateSerializer,
+        responses={200: BasicProfileResponseSerializer},
+        description="Update seller profile basics (name, phone, age).",
+    )
     def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -165,6 +195,11 @@ class DriverProfileUpdateView(generics.GenericAPIView):
     permission_classes = [IsDriver]
     serializer_class = DriverProfileUpdateSerializer
 
+    @extend_schema(
+        request=DriverProfileUpdateSerializer,
+        responses={200: DriverProfileSerializer},
+        description="Update driver profile and user basics.",
+    )
     def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = self.get_serializer(
             data=request.data,
@@ -221,6 +256,21 @@ class AddressListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
+    @extend_schema(
+        responses={200: AddressSerializer(many=True)},
+        description="List saved addresses for the authenticated user.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=AddressCreateUpdateSerializer,
+        responses={201: AddressSerializer},
+        description="Create a new address for the authenticated user.",
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().post(request, *args, **kwargs)
+
     def get_queryset(self) -> QuerySet[Address]:
         user = get_authenticated_user(self.request)
         return Address.objects.filter(user=user).order_by("-created_at")
@@ -239,6 +289,36 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
+    @extend_schema(
+        responses={200: AddressSerializer},
+        description="Retrieve a saved address.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        request=AddressCreateUpdateSerializer,
+        responses={200: AddressSerializer},
+        description="Update a saved address.",
+    )
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(
+        request=AddressCreateUpdateSerializer,
+        responses={200: AddressSerializer},
+        description="Replace a saved address.",
+    )
+    def put(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().put(request, *args, **kwargs)
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete a saved address.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().delete(request, *args, **kwargs)
+
     def get_queryset(self) -> QuerySet[Address]:
         user = get_authenticated_user(self.request)
         return Address.objects.filter(user=user)
@@ -252,10 +332,19 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
 class UserMeView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={200: UserMeSerializer},
+        description="Return the authenticated user's profile summary.",
+    )
     def get(self, request: Request, *args: object, **kwargs: object) -> Response:
         user = get_authenticated_user(request)
         return Response(UserMeSerializer(user).data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        request=UserMeUpdateSerializer,
+        responses={200: UserMeSerializer},
+        description="Update the authenticated user's profile summary.",
+    )
     def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
         serializer = UserMeUpdateSerializer(
             data=request.data,

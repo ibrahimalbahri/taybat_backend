@@ -61,6 +61,10 @@ class AdminDriverVerificationActionSerializer(serializers.Serializer):
     notes = serializers.CharField(allow_blank=True, required=False)
 
 
+class ErrorDetailSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 class AdminDriverVerificationQueueView(generics.ListAPIView):
     """
     GET /api/admin/drivers/verification-queue/
@@ -91,9 +95,9 @@ class AdminDriverVerifyView(APIView):
         request=AdminDriverVerificationActionSerializer,
         responses={
             200: AdminDriverVerificationSerializer,
-            400: serializers.Serializer,
-            404: serializers.Serializer,
-            409: serializers.Serializer,
+            400: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
+            409: ErrorDetailSerializer,
         },
         description="Approve or reject a driver.",
     )

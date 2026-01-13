@@ -4,9 +4,12 @@ from dataclasses import dataclass
 from typing import Optional
 
 from django.conf import settings
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from config.api.serializers import AppLegalLinksSerializer, AppVersionResponseSerializer
 
 
 @dataclass(frozen=True)
@@ -35,6 +38,19 @@ class AppVersionView(APIView):
     GET /api/config/version
     """
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="current_version",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Current app version to determine force update.",
+            ),
+        ],
+        responses={200: AppVersionResponseSerializer},
+        description="Return app version settings and force-update flag.",
+    )
     def get(self, request: Request) -> Response:
         current_version = request.query_params.get("current_version") or ""
         config = AppVersionConfig(
@@ -62,6 +78,10 @@ class AppLegalLinksView(APIView):
     GET /api/config/legal
     """
 
+    @extend_schema(
+        responses={200: AppLegalLinksSerializer},
+        description="Return dynamic links for privacy policy, terms, and support.",
+    )
     def get(self, request: Request) -> Response:
         return Response(
             {

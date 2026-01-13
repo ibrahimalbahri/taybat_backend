@@ -58,3 +58,8 @@ class OrderOutputSerializer(serializers.ModelSerializer):
             "created_at",
             "items",
         ]
+
+
+class ExportResponseSerializer(serializers.Serializer):
+    export_id = serializers.IntegerField()
+    file_path = serializers.CharField()

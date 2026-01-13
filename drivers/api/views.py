@@ -86,7 +86,7 @@ class DriverOnlineToggleView(APIView):
 
     @extend_schema(
         request=serializers.DriverOnlineStatusSerializer,
-        responses={200: serializers.DriverOnlineStatusSerializer},
+        responses={200: serializers.DriverOnlineStatusResponseSerializer},
         description="Toggle driver online/offline status"
     )
     def post(self, request: Request) -> Response:

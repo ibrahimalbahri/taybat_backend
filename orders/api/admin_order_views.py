@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from users.permissions import IsAdmin
 from orders.models import Order, OrderStatusHistory
 from orders.models_exports import Export
-from orders.api.serializers import OrderOutputSerializer
+from orders.api.serializers import OrderOutputSerializer, ExportResponseSerializer
 from orders.services.admin_orders import (
     build_admin_order_queryset,
     export_orders_to_excel,
@@ -76,12 +76,7 @@ class AdminOrderExportExcelView(APIView):
 
     @extend_schema(
         parameters=[AdminOrderFilterSerializer],
-        responses={
-            200: serializers.DictField(
-                child=serializers.CharField(),
-                help_text="Export metadata including file path.",
-            )
-        },
+        responses={200: ExportResponseSerializer},
         description="Export filtered orders to an Excel file.",
     )
     def get(self, request: Request) -> Response:
@@ -120,12 +115,7 @@ class AdminOrderExportPdfView(APIView):
 
     @extend_schema(
         parameters=[AdminOrderFilterSerializer],
-        responses={
-            200: serializers.DictField(
-                child=serializers.CharField(),
-                help_text="Export metadata including file path.",
-            )
-        },
+        responses={200: ExportResponseSerializer},
         description="Export filtered orders to a PDF file.",
     )
     def get(self, request: Request) -> Response:

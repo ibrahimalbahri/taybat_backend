@@ -12,6 +12,11 @@ class DriverOnlineStatusSerializer(serializers.Serializer):
     is_online = serializers.BooleanField()
 
 
+class DriverOnlineStatusResponseSerializer(serializers.Serializer):
+    is_online = serializers.BooleanField()
+    message = serializers.CharField()
+
+
 class SuggestedOrderSerializer(serializers.ModelSerializer):
     """Serializer for suggested orders list."""
     restaurant_name = serializers.CharField(source="restaurant.name", read_only=True, allow_null=True)
