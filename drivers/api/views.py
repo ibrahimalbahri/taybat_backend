@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.db import transaction
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,7 @@ from rest_framework import generics
 
 from users.permissions import IsAdmin, IsApprovedDriver
 from users.models import DriverProfile, DriverStatus, User
+from drivers.models import DriverLocation
 from drivers.api import serializers
 from users.api import serializers as user_serializers
 from orders.services.eligibility import is_driver_eligible_for_order
@@ -20,6 +22,7 @@ from orders.models import (
     OrderStatus,
     OrderStatusHistory,
     OrderDriverSuggestion,
+    OrderDispatchState,
     OrderType,
 )
 from loyalty.services.loyalty_service import LoyaltyService
@@ -109,6 +112,40 @@ class DriverOnlineToggleView(APIView):
         )
 
 
+class DriverLocationUpdateView(APIView):
+    """
+    Update driver's latest location.
+    """
+    permission_classes = [IsAuthenticated, IsApprovedDriver]
+
+    @extend_schema(
+        request=serializers.DriverLocationUpdateSerializer,
+        responses={200: {"type": "object", "properties": {"message": {"type": "string"}}}},
+        description="Update the authenticated driver's latest location",
+    )
+    def post(self, request: Request) -> Response:
+        serializer = serializers.DriverLocationUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        driver = get_authenticated_user(request)
+        now = timezone.now()
+        now = timezone.now()
+
+        DriverLocation.objects.update_or_create(
+            driver=driver,
+            defaults={
+                "lat": serializer.validated_data["lat"],
+                "lng": serializer.validated_data["lng"],
+                "heading": serializer.validated_data.get("heading"),
+                "speed": serializer.validated_data.get("speed"),
+            },
+        )
+
+        return Response(
+            {"message": "Location updated successfully"},
+            status=status.HTTP_200_OK,
+        )
+
+
 class DriverSuggestedOrdersView(generics.ListAPIView):
     """
     Get list of suggested orders for the driver.
@@ -120,6 +157,8 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
 
     def get_queryset(self) -> QuerySet[Order]:
         driver = get_authenticated_user(self.request)
+        now = timezone.now()
+        now = timezone.now()
         
         # Get driver profile to check acceptance types
         try:
@@ -150,7 +189,10 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
 
         # Get orders suggested to this driver
         suggested_order_ids = OrderDriverSuggestion.objects.filter(
-            driver=driver
+            driver=driver,
+            status=OrderDriverSuggestion.SuggestionStatus.SENT,
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
         ).values_list("order_id", flat=True)
 
         queryset = Order.objects.filter(
@@ -256,12 +298,15 @@ class DriverAcceptOrderView(APIView):
             )
 
         # Verify driver was suggested this order
-        suggestion_exists = OrderDriverSuggestion.objects.filter(
+        suggestion = OrderDriverSuggestion.objects.filter(
             order=order,
-            driver=driver
-        ).exists()
+            driver=driver,
+            status=OrderDriverSuggestion.SuggestionStatus.SENT,
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+        ).first()
 
-        if not suggestion_exists:
+        if not suggestion:
             return Response(
                 {"detail": "This order was not suggested to you."},
                 status=status.HTTP_403_FORBIDDEN
@@ -277,6 +322,20 @@ class DriverAcceptOrderView(APIView):
             order=order,
             status=OrderStatus.ACCEPTED
         )
+
+        suggestion.status = OrderDriverSuggestion.SuggestionStatus.ACCEPTED
+        suggestion.responded_at = now
+        suggestion.save(update_fields=["status", "responded_at"])
+
+        OrderDriverSuggestion.objects.filter(
+            order=order,
+            status=OrderDriverSuggestion.SuggestionStatus.SENT,
+        ).exclude(id=suggestion.id).update(
+            status=OrderDriverSuggestion.SuggestionStatus.EXPIRED,
+            responded_at=now,
+        )
+
+        OrderDispatchState.objects.filter(order=order).update(is_active=False)
 
         return Response(
             {
@@ -321,7 +380,8 @@ class DriverRejectOrderView(APIView):
         try:
             suggestion = OrderDriverSuggestion.objects.select_related("order").get(
                 order_id=order_id,
-                driver=driver
+                driver=driver,
+                status=OrderDriverSuggestion.SuggestionStatus.SENT,
             )
             order = suggestion.order
         except OrderDriverSuggestion.DoesNotExist:
@@ -340,15 +400,27 @@ class DriverRejectOrderView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Remove the suggestion (driver has rejected)
-        # The order will remain available for other drivers
-        # Note: We could also mark this in a separate table, but for now
-        # we'll just remove the suggestion so the driver doesn't see it again
-        
-        # Actually, we might want to keep the suggestion for analytics,
-        # but mark it as rejected. For now, we'll just delete it.
-        # In production, you might want a "rejected_at" timestamp instead.
-        suggestion.delete()
+        suggestion.status = OrderDriverSuggestion.SuggestionStatus.REJECTED
+        suggestion.responded_at = now
+        suggestion.save(update_fields=["status", "responded_at"])
+
+        pending_exists = OrderDriverSuggestion.objects.filter(
+            order=order,
+            status=OrderDriverSuggestion.SuggestionStatus.SENT,
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+        ).exists()
+        if not pending_exists and order.status == OrderStatus.DRIVER_NOTIFICATION_SENT:
+            order.status = OrderStatus.SEARCHING_FOR_DRIVER
+            order.save(update_fields=["status"])
+            OrderStatusHistory.objects.create(
+                order=order,
+                status=OrderStatus.SEARCHING_FOR_DRIVER,
+            )
+            OrderDispatchState.objects.update_or_create(
+                order=order,
+                defaults={"next_retry_at": now},
+            )
 
         return Response(
             {

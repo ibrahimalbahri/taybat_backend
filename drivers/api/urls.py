@@ -3,6 +3,7 @@ from django.urls import path
 from drivers.api.views import (
     DriverCreateView,
     DriverOnlineToggleView,
+    DriverLocationUpdateView,
     DriverSuggestedOrdersView,
     DriverAcceptOrderView,
     DriverRejectOrderView,
@@ -21,6 +22,11 @@ urlpatterns = [
         "drivers/toggle-online/",
         DriverOnlineToggleView.as_view(),
         name="driver-toggle-online",
+    ),
+    path(
+        "drivers/location/",
+        DriverLocationUpdateView.as_view(),
+        name="driver-location-update",
     ),
     path(
         "drivers/suggested-orders/",

@@ -192,6 +192,11 @@ class OrderDriverSuggestion(models.Model):
     """
     Stores the 5 closest drivers sent the order offer (per dispatch cycle).
     """
+    class SuggestionStatus(models.TextChoices):
+        SENT = "SENT", "Sent"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        REJECTED = "REJECTED", "Rejected"
+        EXPIRED = "EXPIRED", "Expired"
 
     order = models.ForeignKey(
         Order,
@@ -206,6 +211,15 @@ class OrderDriverSuggestion(models.Model):
     )
 
     distance_at_time = models.DecimalField(max_digits=10, decimal_places=3)
+    cycle = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=20,
+        choices=SuggestionStatus.choices,
+        default=SuggestionStatus.SENT,
+    )
+    notified_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -214,10 +228,38 @@ class OrderDriverSuggestion(models.Model):
         indexes = [
             models.Index(fields=["order", "created_at"]),
             models.Index(fields=["driver", "created_at"]),
+            models.Index(fields=["order", "status", "created_at"]),
         ]
 
     def __str__(self) -> str:
         return f"Suggestion(order={self.order_id}, driver={self.driver_id})"
+
+
+class OrderDispatchState(models.Model):
+    """
+    Tracks dispatch cycles for an order.
+    """
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="dispatch_state",
+    )
+    cycle = models.PositiveIntegerField(default=0)
+    last_dispatched_at = models.DateTimeField(null=True, blank=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Order Dispatch State"
+        verbose_name_plural = "Order Dispatch States"
+        indexes = [
+            models.Index(fields=["is_active", "next_retry_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"OrderDispatchState(order={self.order_id}, cycle={self.cycle})"
 
 
 class OrderStatusHistory(models.Model):

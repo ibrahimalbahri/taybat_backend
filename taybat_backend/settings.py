@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+try:
+    from celery.schedules import schedule
+except ImportError:  # pragma: no cover - optional for non-celery environments
+    schedule = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -174,6 +178,13 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
 OTP_CODE_TTL_SECONDS = 300
 OTP_CODE_LENGTH = 6
 
@@ -188,6 +199,24 @@ SPECTACULAR_SETTINGS = {
     # Optional but recommended:
     "SERVE_INCLUDE_SCHEMA": False,
 }
+# Dispatch settings
+DISPATCH_MATCH_INTERVAL_SECONDS = int(os.getenv("DISPATCH_MATCH_INTERVAL_SECONDS", "10"))
+DISPATCH_ACCEPTANCE_WINDOW_SECONDS = int(os.getenv("DISPATCH_ACCEPTANCE_WINDOW_SECONDS", "60"))
+DISPATCH_SUGGESTION_LIMIT = int(os.getenv("DISPATCH_SUGGESTION_LIMIT", "5"))
+DISPATCH_MAX_CYCLES = int(os.getenv("DISPATCH_MAX_CYCLES", "5"))
+DISPATCH_RETRY_DELAY_SECONDS = int(os.getenv("DISPATCH_RETRY_DELAY_SECONDS", "10"))
+DISPATCH_LOCATION_STALE_SECONDS = int(os.getenv("DISPATCH_LOCATION_STALE_SECONDS", "60"))
+
+CELERY_BEAT_SCHEDULE = (
+    {
+        "dispatch-match-loop": {
+            "task": "orders.tasks.dispatch_match_loop",
+            "schedule": schedule(DISPATCH_MATCH_INTERVAL_SECONDS),
+        },
+    }
+    if schedule
+    else {}
+)
 # settings.py
 LOYALTY_POINTS_PER_EUR = 1
 LOYALTY_ONLY_FOOD = False

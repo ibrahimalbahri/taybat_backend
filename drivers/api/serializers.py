@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import serializers
 from orders.models import Order, OrderStatus
 from users.models import VehicleType, User
@@ -15,6 +17,13 @@ class DriverOnlineStatusSerializer(serializers.Serializer):
 class DriverOnlineStatusResponseSerializer(serializers.Serializer):
     is_online = serializers.BooleanField()
     message = serializers.CharField()
+
+
+class DriverLocationUpdateSerializer(serializers.Serializer):
+    lat = serializers.DecimalField(max_digits=9, decimal_places=6)
+    lng = serializers.DecimalField(max_digits=9, decimal_places=6)
+    heading = serializers.IntegerField(required=False, allow_null=True, min_value=0, max_value=359)
+    speed = serializers.DecimalField(required=False, allow_null=True, max_digits=6, decimal_places=2)
 
 
 class SuggestedOrderSerializer(serializers.ModelSerializer):
@@ -47,8 +56,12 @@ class SuggestedOrderSerializer(serializers.ModelSerializer):
     
     def get_distance(self, obj: Order) -> float | None:
         """Get distance from OrderDriverSuggestion if available."""
+        now = timezone.now()
         suggestion = obj.driver_suggestions.filter(
-            driver=self.context["request"].user
+            driver=self.context["request"].user,
+            status=obj.driver_suggestions.model.SuggestionStatus.SENT,
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
         ).first()
         if suggestion:
             return float(suggestion.distance_at_time)

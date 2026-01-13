@@ -44,3 +44,30 @@ class DriverVerification(models.Model):
 
     def __str__(self) -> str:
         return f"DriverVerification(driver={self.driver.id}, status={self.status})"
+
+
+class DriverLocation(models.Model):
+    """
+    Latest known driver location.
+    """
+
+    driver = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="driver_location",
+    )
+    lat = models.DecimalField(max_digits=9, decimal_places=6)
+    lng = models.DecimalField(max_digits=9, decimal_places=6)
+    heading = models.PositiveSmallIntegerField(null=True, blank=True)
+    speed = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Driver Location"
+        verbose_name_plural = "Driver Locations"
+        indexes = [
+            models.Index(fields=["updated_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"DriverLocation(driver={self.driver_id})"
