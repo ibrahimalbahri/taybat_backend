@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from sellers.models import Category, Item, Coupon
+from sellers.models import Category, Item, Coupon, Restaurant
 
 
 class SellerCategorySerializer(serializers.ModelSerializer):
@@ -91,6 +91,28 @@ class SellerCouponUpdateSerializer(serializers.ModelSerializer):
             "end_date",
             "is_active",
         ]
+
+
+class SellerRestaurantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Restaurant
+        fields = [
+            "id",
+            "name",
+            "address",
+            "lat",
+            "lng",
+            "phone",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["status", "created_at"]
+
+
+class SellerRestaurantCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Restaurant
+        fields = ["name", "address", "lat", "lng", "phone"]
 
 {
   "cells": [],

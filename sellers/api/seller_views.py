@@ -15,6 +15,8 @@ from sellers.models import Restaurant, Category, Item
 from sellers.api.seller_serializers import (
     SellerCategorySerializer,
     SellerItemSerializer,
+    SellerRestaurantSerializer,
+    SellerRestaurantCreateUpdateSerializer,
 )
 from orders.models import Order, OrderStatus, OrderItem, OrderStatusHistory
 from orders.api.serializers import OrderOutputSerializer
@@ -338,3 +340,43 @@ class SellerItemStatsView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class SellerRestaurantListCreateView(generics.ListCreateAPIView):
+    """
+    List and create restaurants owned by the seller.
+    """
+
+    permission_classes = [IsAuthenticated, IsSeller]
+    serializer_class = SellerRestaurantSerializer
+
+    def get_queryset(self) -> QuerySet[Restaurant]:
+        user = get_authenticated_user(self.request)
+        return Restaurant.objects.filter(owner_user=user).order_by("-created_at")
+
+    def get_serializer_class(self) -> type[drf_serializers.BaseSerializer]:
+        if self.request.method == "POST":
+            return SellerRestaurantCreateUpdateSerializer
+        return SellerRestaurantSerializer
+
+    def perform_create(self, serializer: drf_serializers.BaseSerializer) -> None:
+        user = get_authenticated_user(self.request)
+        serializer.save(owner_user=user)
+
+
+class SellerRestaurantDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a restaurant owned by the seller.
+    """
+
+    permission_classes = [IsAuthenticated, IsSeller]
+    serializer_class = SellerRestaurantSerializer
+
+    def get_queryset(self) -> QuerySet[Restaurant]:
+        user = get_authenticated_user(self.request)
+        return Restaurant.objects.filter(owner_user=user)
+
+    def get_serializer_class(self) -> type[drf_serializers.BaseSerializer]:
+        if self.request.method in {"PUT", "PATCH"}:
+            return SellerRestaurantCreateUpdateSerializer
+        return SellerRestaurantSerializer

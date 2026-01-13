@@ -15,6 +15,8 @@ from sellers.api.seller_views import (
     SellerItemListCreateView,
     SellerItemDetailView,
     SellerItemStatsView,
+    SellerRestaurantListCreateView,
+    SellerRestaurantDetailView,
 )
 from sellers.api.seller_coupon_views import (
     SellerCouponListView,
@@ -95,6 +97,16 @@ urlpatterns = [
         "seller/items/<int:pk>/stats/",
         SellerItemStatsView.as_view(),
         name="seller-item-stats",
+    ),
+    path(
+        "seller/restaurants/",
+        SellerRestaurantListCreateView.as_view(),
+        name="seller-restaurants",
+    ),
+    path(
+        "seller/restaurants/<int:pk>/",
+        SellerRestaurantDetailView.as_view(),
+        name="seller-restaurant-detail",
     ),
     path(
         "seller/coupons/",
