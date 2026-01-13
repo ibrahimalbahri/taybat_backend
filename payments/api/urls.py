@@ -2,6 +2,7 @@ from django.urls import path
 
 from payments.api.admin_reconciliation_views import AdminReconciliationOrdersView
 from payments.api.admin_refund_views import AdminOrderRefundView
+from payments.api.seller_refund_views import SellerOrderRefundView
 from payments.api.admin_transaction_views import AdminTransactionListView
 from payments.api.customer_payment_method_views import PaymentMethodListCreateView, PaymentMethodUpdateDeleteView
 
@@ -18,4 +19,5 @@ urlpatterns = [
     path("payments/", PaymentMethodListCreateView.as_view(), name="customer-payment-methods"),
     path("payments/<int:pk>/", PaymentMethodUpdateDeleteView.as_view(), name="customer-payment-method-detail"),
     path("orders/<int:order_id>/refund/", AdminOrderRefundView.as_view(), name="admin-order-refund"),
+    path("seller/orders/<int:order_id>/refund/", SellerOrderRefundView.as_view(), name="seller-order-refund"),
 ]
