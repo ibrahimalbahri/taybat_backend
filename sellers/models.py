@@ -20,6 +20,7 @@ class Restaurant(models.Model):
 
     name = models.CharField(max_length=255)
 
+    logo = models.URLField(null=True, blank=True)
     address = models.TextField()
     lat = models.DecimalField(max_digits=9, decimal_places=6)
     lng = models.DecimalField(max_digits=9, decimal_places=6)

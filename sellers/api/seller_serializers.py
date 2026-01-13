@@ -108,6 +108,7 @@ class SellerRestaurantSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "logo",
             "address",
             "lat",
             "lng",
@@ -138,7 +139,7 @@ class SellerRestaurantSerializer(serializers.ModelSerializer):
 class SellerRestaurantCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Restaurant
-        fields = ["name", "address", "lat", "lng", "phone"]
+        fields = ["name", "logo", "address", "lat", "lng", "phone"]
 
 {
   "cells": [],

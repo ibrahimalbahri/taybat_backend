@@ -145,6 +145,7 @@ class Command(BaseCommand):
             owner_user=seller,
             name="Seed Restaurant",
             defaults={
+                "logo": "https://example.com/logo.png",
                 "address": "Seed Address",
                 "lat": Decimal("24.7136"),
                 "lng": Decimal("46.6753"),
