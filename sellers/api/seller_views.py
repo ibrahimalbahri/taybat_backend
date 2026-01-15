@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.db import transaction
 from django.db.models import Sum, F, QuerySet
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework import serializers as drf_serializers
 from rest_framework.permissions import IsAuthenticated
@@ -38,6 +38,20 @@ class SellerOrderListView(generics.ListAPIView):
 
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = OrderOutputSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter orders by status.",
+            ),
+        ]
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self) -> QuerySet[Order]:
         user = get_authenticated_user(self.request)
@@ -192,6 +206,34 @@ class SellerCategoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerCategorySerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Restaurant id to scope categories to the seller's restaurant.",
+            ),
+        ]
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Restaurant id to create categories under the seller's restaurant.",
+            ),
+        ]
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().post(request, *args, **kwargs)
+
     def _get_restaurant(self) -> Restaurant | None:
         restaurant_id = self.request.query_params.get("restaurant_id")
         if not restaurant_id:
@@ -206,7 +248,7 @@ class SellerCategoryListCreateView(generics.ListCreateAPIView):
         restaurant = self._get_restaurant()
         if not restaurant:
             return Category.objects.none()
-        return restaurant.categories.all().order_by("view_order", "name")
+        return restaurant.categories.all().order_by("view_order", "name") # type: ignore
 
     def perform_create(self, serializer: drf_serializers.BaseSerializer) -> None:
         restaurant = self._get_restaurant()
@@ -238,13 +280,41 @@ class SellerItemListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerItemSerializer
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Restaurant id to scope items to the seller's restaurant.",
+            ),
+        ]
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Restaurant id to create items under the seller's restaurant.",
+            ),
+        ]
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().post(request, *args, **kwargs)
+
     def _get_restaurant(self) -> Restaurant | None:
-        restaurant_id = self.request.query_params.get("restaurant_id")
-        if not restaurant_id:
-            return None
+        # restaurant_id = self.request.query_params.get("restaurant_id")
+        # if not restaurant_id:
+        #     return None
         try:
             user = get_authenticated_user(self.request)
-            return Restaurant.objects.get(id=restaurant_id, owner_user=user)
+            return Restaurant.objects.get(owner_user=user)
         except Restaurant.DoesNotExist:
             return None
 
