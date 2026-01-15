@@ -129,12 +129,12 @@ class SellerOrderAcceptView(APIView):
         return Response(OrderOutputSerializer(order).data, status=status.HTTP_200_OK)
 
 
-class SellerOrderStatusUpdateSerializer(APIView):
+class SellerOrderStatusUpdateSerializer(drf_serializers.Serializer):
     """
-    Dummy class to satisfy drf-spectacular request schema.
+    Request schema for updating order status.
     """
 
-    pass
+    status = drf_serializers.CharField()
 
 
 class SellerOrderStatusUpdateView(APIView):
@@ -145,13 +145,7 @@ class SellerOrderStatusUpdateView(APIView):
     permission_classes = [IsAuthenticated, IsSeller]
 
     @extend_schema(
-        request={
-            "type": "object",
-            "properties": {
-                "status": {"type": "string"},
-            },
-            "required": ["status"],
-        },
+        request=SellerOrderStatusUpdateSerializer,
         responses={200: OrderOutputSerializer},
         description="Update order status for a restaurant order (e.g. CANCELLED).",
     )

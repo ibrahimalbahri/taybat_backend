@@ -197,7 +197,15 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Backend API for Taybat (Food, Taxi, Shipping).",
     "VERSION": "1.0.0",
     # Optional but recommended:
-    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_INCLUDE_SCHEMA": True,
+    "ENUM_NAME_OVERRIDES": {
+        "OrderStatusEnum": "orders.models.ORDER_STATUS_CHOICES",
+        "RestaurantStatusEnum": "sellers.models.RESTAURANT_STATUS_CHOICES",
+        "TransactionStatusEnum": "payments.models.TRANSACTION_STATUS_CHOICES",
+        "DriverStatusEnum": "users.models.DRIVER_STATUS_CHOICES",
+        "OrderDriverSuggestionStatusEnum": "orders.models.ORDER_DRIVER_SUGGESTION_STATUS_CHOICES",
+        "VehicleTypeEnum": "orders.models.VEHICLE_TYPE_CHOICES",
+    },
 }
 # Dispatch settings
 DISPATCH_MATCH_INTERVAL_SECONDS = int(os.getenv("DISPATCH_MATCH_INTERVAL_SECONDS", "10"))

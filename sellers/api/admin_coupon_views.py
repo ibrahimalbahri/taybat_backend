@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.db.models import QuerySet
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -171,6 +171,29 @@ class AdminCouponUsageView(generics.ListAPIView):
     serializer_class = AdminCouponUsageSerializer
 
     @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="from",
+                type=OpenApiTypes.DATETIME,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter usage created at/after this timestamp.",
+            ),
+            OpenApiParameter(
+                name="to",
+                type=OpenApiTypes.DATETIME,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter usage created at/before this timestamp.",
+            ),
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter usage by user id.",
+            ),
+        ],
         responses=AdminCouponUsageSerializer(many=True),
         description="List coupon usage for audit.",
     )

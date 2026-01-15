@@ -27,6 +27,9 @@ class TransactionStatus(models.TextChoices):
     CANCELLED = "CANCELLED", "Cancelled"
 
 
+TRANSACTION_STATUS_CHOICES = TransactionStatus.choices
+
+
 class PaymentMethod(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payment_methods")
     provider = models.CharField(max_length=20, choices=PaymentProvider.choices, default=PaymentProvider.MOCK)

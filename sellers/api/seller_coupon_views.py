@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import QuerySet
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
@@ -26,6 +26,15 @@ class SellerCouponListView(generics.ListCreateAPIView):
     serializer_class = SellerCouponSerializer
 
     @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter coupons by restaurant id.",
+            ),
+        ],
         responses={200: SellerCouponSerializer(many=True)},
         description="List coupons for seller-owned restaurants.",
     )

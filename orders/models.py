@@ -21,11 +21,17 @@ class OrderStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
     CANCELLED = "CANCELLED", "Cancelled"
 
+
+ORDER_STATUS_CHOICES = OrderStatus.choices
+
 class VehicleType(models.TextChoices):
     BIKE = "BIKE", "Bike"
     MOTOR = "MOTOR", "Motorcycle"
     CAR = "CAR", "Car"
     VAN = "VAN", "Van"
+
+
+VEHICLE_TYPE_CHOICES = VehicleType.choices
 
 class Order(models.Model):
     """
@@ -233,6 +239,9 @@ class OrderDriverSuggestion(models.Model):
 
     def __str__(self) -> str:
         return f"Suggestion(order={self.order_id}, driver={self.driver_id})"
+
+
+ORDER_DRIVER_SUGGESTION_STATUS_CHOICES = OrderDriverSuggestion.SuggestionStatus.choices
 
 
 class OrderDispatchState(models.Model):

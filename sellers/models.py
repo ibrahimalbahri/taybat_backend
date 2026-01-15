@@ -10,6 +10,9 @@ class RestaurantStatus(models.TextChoices):
     INACTIVE = "INACTIVE", "Inactive"
 
 
+RESTAURANT_STATUS_CHOICES = RestaurantStatus.choices
+
+
 class Restaurant(models.Model):
     owner_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

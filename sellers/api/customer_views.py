@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from django.db.models import QuerySet
 from typing import cast
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 from users.permissions import IsCustomer
 from sellers.models import Restaurant, Category, Item
@@ -50,6 +53,20 @@ class CustomerItemSearchView(generics.ListAPIView):
     serializer_class = ItemSearchResultSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "description", "ingredients"]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="restaurant_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter items by restaurant id.",
+            ),
+        ]
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self) -> QuerySet[Item]:
         qs = (

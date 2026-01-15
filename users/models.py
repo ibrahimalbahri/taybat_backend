@@ -186,6 +186,9 @@ class DriverStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
 
 
+DRIVER_STATUS_CHOICES = DriverStatus.choices
+
+
 class VehicleType(models.TextChoices):
     BIKE = "BIKE", "Bike"
     MOTOR = "MOTOR", "Motorcycle"
