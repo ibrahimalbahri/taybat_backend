@@ -25,3 +25,28 @@ class DeviceToken(models.Model):
 
     def __str__(self) -> str:
         return f"DeviceToken(user={self.user_id}, active={self.is_active})"
+
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    data = models.JSONField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        indexes = [
+            models.Index(fields=["recipient", "created_at"]),
+            models.Index(fields=["recipient", "is_read", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Notification({self.id}) to {self.recipient_id}"
