@@ -240,4 +240,5 @@ sentry_sdk.init(
     integrations=[DjangoIntegration()],
     traces_sample_rate=0.1,  # start low
     send_default_pii=True,   # if you want user info
+    environment=os.getenv("SENTRY_ENVIRONMENT", "development")
 )
