@@ -246,18 +246,41 @@ class DriverProfile(models.Model):
         blank=True,
     )
 
-    earnings_last_month = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        help_text="Cached value for quick access",
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Driver Profile"
         verbose_name_plural = "Driver Profiles"
+
+    @property
+    def earnings_last_month(self) -> "Decimal":
+        from datetime import timedelta
+        from decimal import Decimal
+
+        from django.db.models import DecimalField, ExpressionWrapper, F, Sum
+        from django.utils import timezone
+
+        from orders.models import OrderStatus
+
+        now = timezone.now()
+        start_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month_end = start_current_month - timedelta(microseconds=1)
+        start_last_month = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        earnings_expr = ExpressionWrapper(
+            F("delivery_fee") + F("tip"),
+            output_field=DecimalField(max_digits=10, decimal_places=2),
+        )
+        total = (
+            self.user.driver_orders.filter(
+                status=OrderStatus.COMPLETED,
+                created_at__gte=start_last_month,
+                created_at__lt=start_current_month,
+            )
+            .aggregate(total=Sum(earnings_expr))
+            .get("total")
+        )
+        return total or Decimal("0")
 
     def __str__(self) -> str:
         return f"DriverProfile({self.user.email})"

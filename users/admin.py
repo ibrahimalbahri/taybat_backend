@@ -41,8 +41,7 @@ class DriverProfileAdmin(admin.ModelAdmin):
 
     @admin.display(description="Earnings Last Month")
     def earnings_last_month(self, obj: DriverProfile) -> float:
-        last_month = obj.earnings.filter(created_at__month__exact=obj.earnings.last().created_at.month - 1)
-        return sum(earning.amount for earning in last_month)
+        return obj.earnings_last_month
     
 @admin.register(SellerProfile)
 class SellerProfileAdmin(admin.ModelAdmin):
