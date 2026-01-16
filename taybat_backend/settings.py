@@ -229,3 +229,14 @@ CELERY_BEAT_SCHEDULE = (
 LOYALTY_POINTS_PER_EUR = 1
 LOYALTY_ONLY_FOOD = False
 LOYALTY_ISSUE_ON_STATUS = "COMPLETED"
+
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn=os.environ["SENTRY_DSN"],
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=0.1,  # start low
+    send_default_pii=True,   # if you want user info
+)
