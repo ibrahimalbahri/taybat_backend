@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from .models import User, Address, DriverProfile
+from .models import CustomerProfile, SellerProfile, User, Address, DriverProfile
 
 
 @admin.register(User)
@@ -38,3 +38,34 @@ class DriverProfileAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "vehicle_type", "accepts_food", "accepts_shipping", "accepts_taxi")
     search_fields = ("user__email", "user__phone")
+
+    @admin.display(description="Earnings Last Month")
+    def earnings_last_month(self, obj: DriverProfile) -> float:
+        last_month = obj.earnings.filter(created_at__month__exact=obj.earnings.last().created_at.month - 1)
+        return sum(earning.amount for earning in last_month)
+    
+@admin.register(SellerProfile)
+class SellerProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "total_sales",
+        "created_at",
+    )
+    search_fields = ("user__email", "store_name")
+
+    @admin.display(description="Total Sales")
+    def total_sales(self, obj: SellerProfile) -> float:
+        return sum(order.total_amount for order in obj.orders.all())
+    
+@admin.register(CustomerProfile)
+class CustomerProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "total_orders",
+        "created_at",
+    )
+    search_fields = ("user__email",)
+
+    @admin.display(description="Total Orders")
+    def total_orders(self, obj: CustomerProfile) -> int:
+        return obj.orders.count()

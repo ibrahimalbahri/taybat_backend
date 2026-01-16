@@ -31,7 +31,7 @@ from users.api.serializers import (
     UserMeUpdateSerializer,
     BasicProfileResponseSerializer,
 )
-from users.models import Address, CustomerProfile, DriverProfile, User
+from users.models import Address, CustomerProfile, DriverProfile, SellerProfile, User
 from django.db.models import QuerySet
 from users.permissions import IsCustomer, IsSeller, IsDriver, IsAuthenticated
 from taybat_backend.typing import get_authenticated_user
@@ -135,9 +135,51 @@ class OtpVerifyView(generics.GenericAPIView):
         )
 
 
-class CustomerProfileUpdateView(generics.GenericAPIView):
+class CustomerProfileView(generics.GenericAPIView):
     permission_classes = [IsCustomer]
     serializer_class = CustomerProfileUpdateSerializer
+
+    @extend_schema(
+        responses={200: BasicProfileResponseSerializer},
+        description="Retrieve customer profile basics (name, phone, age).",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            user.customer_profile
+        except CustomerProfile.DoesNotExist:
+            return Response({"detail": "Customer profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=CustomerProfileUpdateSerializer,
+        responses={201: BasicProfileResponseSerializer},
+        description="Create customer profile and optionally set basics (name, phone, age).",
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = get_authenticated_user(request)
+        _profile, created = CustomerProfile.objects.get_or_create(user=user)
+
+        update_fields: list[str] = []
+        for field in ("name", "phone", "age"):
+            if field in data:
+                setattr(user, field, data[field])
+                update_fields.append(field)
+        if update_fields:
+            user.save(update_fields=update_fields)
+
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
     @extend_schema(
         request=CustomerProfileUpdateSerializer,
@@ -162,10 +204,66 @@ class CustomerProfileUpdateView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        responses={204: None},
+        description="Delete the authenticated customer's profile.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            profile = user.customer_profile
+        except CustomerProfile.DoesNotExist:
+            return Response({"detail": "Customer profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class SellerProfileUpdateView(generics.GenericAPIView):
+        profile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SellerProfileView(generics.GenericAPIView):
     permission_classes = [IsSeller]
     serializer_class = SellerProfileUpdateSerializer
+
+    @extend_schema(
+        responses={200: BasicProfileResponseSerializer},
+        description="Retrieve seller profile basics (name, phone, age).",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            user.seller_profile
+        except SellerProfile.DoesNotExist:
+            return Response({"detail": "Seller profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=SellerProfileUpdateSerializer,
+        responses={201: BasicProfileResponseSerializer},
+        description="Create seller profile and optionally set basics (name, phone, age).",
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = get_authenticated_user(request)
+        _profile, created = SellerProfile.objects.get_or_create(user=user)
+
+        update_fields: list[str] = []
+        for field in ("name", "phone", "age"):
+            if field in data:
+                setattr(user, field, data[field])
+                update_fields.append(field)
+        if update_fields:
+            user.save(update_fields=update_fields)
+
+        return Response(
+            {"name": user.name, "phone": user.phone, "age": user.age},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
     @extend_schema(
         request=SellerProfileUpdateSerializer,
@@ -190,33 +288,31 @@ class SellerProfileUpdateView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        responses={204: None},
+        description="Delete the authenticated seller's profile.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            profile = user.seller_profile
+        except SellerProfile.DoesNotExist:
+            return Response({"detail": "Seller profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class DriverProfileUpdateView(generics.GenericAPIView):
+        profile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DriverProfileView(generics.GenericAPIView):
     permission_classes = [IsDriver]
     serializer_class = DriverProfileUpdateSerializer
 
-    @extend_schema(
-        request=DriverProfileUpdateSerializer,
-        responses={200: DriverProfileSerializer},
-        description="Update driver profile and user basics.",
-    )
-    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
-        serializer = self.get_serializer(
-            data=request.data,
-            partial=True,
-            context={"request": request},
-        )
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        if not data:
-            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = get_authenticated_user(request)
-        try:
-            profile = user.driver_profile
-        except DriverProfile.DoesNotExist:
-            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
-
+    def _apply_driver_updates(
+        self,
+        user: User,
+        profile: DriverProfile,
+        data: dict[str, object],
+    ) -> None:
         user_fields = {"name", "phone", "age"}
         profile_fields = {
             "vehicle_type",
@@ -246,10 +342,104 @@ class DriverProfileUpdateView(generics.GenericAPIView):
         if profile_update_fields:
             profile.save(update_fields=profile_update_fields)
 
+    @extend_schema(
+        responses={200: DriverProfileSerializer},
+        description="Retrieve the authenticated driver's profile.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(DriverProfileSerializer(profile).data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=DriverProfileUpdateSerializer,
+        responses={201: DriverProfileSerializer},
+        description="Create the authenticated driver's profile.",
+    )
+    def post(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+            created = False
+        except DriverProfile.DoesNotExist:
+            if "vehicle_type" not in data:
+                return Response(
+                    {"detail": "vehicle_type is required to create a driver profile."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile = DriverProfile.objects.create(
+                user=user,
+                vehicle_type=data["vehicle_type"],
+                accepts_food=data.get("accepts_food", False),
+                accepts_shipping=data.get("accepts_shipping", False),
+                accepts_taxi=data.get("accepts_taxi", False),
+                driving_license=data.get("driving_license"),
+                id_document=data.get("id_document"),
+                other_documents=data.get("other_documents"),
+            )
+            created = True
+
+        self._apply_driver_updates(user, profile, data)
+
+        return Response(
+            DriverProfileSerializer(profile).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        request=DriverProfileUpdateSerializer,
+        responses={200: DriverProfileSerializer},
+        description="Update driver profile and user basics.",
+    )
+    def patch(self, request: Request, *args: object, **kwargs: object) -> Response:
+        serializer = self.get_serializer(
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not data:
+            return Response({"detail": "No fields provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        self._apply_driver_updates(user, profile, data)
+
         return Response(
             DriverProfileSerializer(profile).data,
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete the authenticated driver's profile.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        user = get_authenticated_user(request)
+        try:
+            profile = user.driver_profile
+        except DriverProfile.DoesNotExist:
+            return Response({"detail": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AddressListCreateView(generics.ListCreateAPIView):
