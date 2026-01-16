@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 
 from celery import shared_task
 from django.conf import settings
@@ -18,6 +19,8 @@ from orders.models import (
 )
 from orders.services.dispatch import select_driver_candidates
 
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def dispatch_match_loop() -> None:
@@ -27,11 +30,15 @@ def dispatch_match_loop() -> None:
         driver__isnull=True,
     ).select_related("pickup_address", "dropoff_address")
 
+    logger.info("Dispatch loop tick: orders=%s", orders.count())
+
     for order in orders:
+        logger.debug("Dispatch loop: processing order=%s status=%s", order.id, order.status)
         with transaction.atomic():
             try:
                 locked_order = Order.objects.select_for_update().get(pk=order.pk)
             except Order.DoesNotExist:
+                logger.debug("Dispatch loop: order vanished order=%s", order.id)
                 continue
 
             state, _created = OrderDispatchState.objects.select_for_update().get_or_create(
@@ -39,9 +46,15 @@ def dispatch_match_loop() -> None:
             )
 
             if not state.is_active:
+                logger.debug("Dispatch loop: inactive dispatch state order=%s", locked_order.id)
                 continue
 
             if state.next_retry_at and state.next_retry_at > now:
+                logger.debug(
+                    "Dispatch loop: next retry in future order=%s next_retry_at=%s",
+                    locked_order.id,
+                    state.next_retry_at,
+                )
                 continue
 
             pending_exists = OrderDriverSuggestion.objects.filter(
@@ -51,24 +64,41 @@ def dispatch_match_loop() -> None:
                 Q(expires_at__isnull=True) | Q(expires_at__gt=now)
             ).exists()
             if pending_exists:
+                logger.debug("Dispatch loop: pending suggestion exists order=%s", locked_order.id)
                 continue
 
             if state.cycle >= settings.DISPATCH_MAX_CYCLES:
                 state.is_active = False
                 state.updated_at = now
                 state.save(update_fields=["is_active", "updated_at"])
+                logger.info(
+                    "Dispatch loop: max cycles reached order=%s cycle=%s",
+                    locked_order.id,
+                    state.cycle,
+                )
                 continue
 
             exclude_driver_ids = OrderDriverSuggestion.objects.filter(
                 order=locked_order
             ).values_list("driver_id", flat=True)
             candidates = select_driver_candidates(locked_order, exclude_driver_ids)
+            logger.info(
+                "Dispatch loop: candidates=%s order=%s cycle=%s",
+                len(candidates),
+                locked_order.id,
+                state.cycle + 1,
+            )
 
             if not candidates:
                 state.next_retry_at = now + timedelta(
                     seconds=settings.DISPATCH_RETRY_DELAY_SECONDS
                 )
                 state.save(update_fields=["next_retry_at"])
+                logger.debug(
+                    "Dispatch loop: no candidates order=%s next_retry_at=%s",
+                    locked_order.id,
+                    state.next_retry_at,
+                )
                 continue
 
             cycle = state.cycle + 1
@@ -89,6 +119,12 @@ def dispatch_match_loop() -> None:
                 for candidate in candidates[:suggestion_limit]
             ]
             OrderDriverSuggestion.objects.bulk_create(suggestions)
+            logger.info(
+                "Dispatch loop: suggested drivers order=%s count=%s expires_at=%s",
+                locked_order.id,
+                len(suggestions),
+                expires_at,
+            )
 
             state.cycle = cycle
             state.last_dispatched_at = now
@@ -109,6 +145,12 @@ def dispatch_match_loop() -> None:
                 args=[locked_order.id, cycle],
                 countdown=acceptance_window,
             )
+            logger.debug(
+                "Dispatch loop: scheduled expiry order=%s cycle=%s in=%ss",
+                locked_order.id,
+                cycle,
+                acceptance_window,
+            )
 
             send_dispatch_offer(
                 order=locked_order,
@@ -119,13 +161,16 @@ def dispatch_match_loop() -> None:
 @shared_task
 def expire_order_suggestions(order_id: int, cycle: int) -> None:
     now = timezone.now()
+    logger.debug("Dispatch expiry: order=%s cycle=%s", order_id, cycle)
     with transaction.atomic():
         try:
             order = Order.objects.select_for_update().get(pk=order_id)
         except Order.DoesNotExist:
+            logger.debug("Dispatch expiry: order missing order=%s", order_id)
             return
 
         if order.driver_id:
+            logger.debug("Dispatch expiry: already accepted order=%s", order_id)
             return
 
         try:
@@ -134,6 +179,12 @@ def expire_order_suggestions(order_id: int, cycle: int) -> None:
             return
 
         if state.cycle != cycle:
+            logger.debug(
+                "Dispatch expiry: cycle mismatch order=%s expected=%s actual=%s",
+                order_id,
+                cycle,
+                state.cycle,
+            )
             return
 
         suggestions = OrderDriverSuggestion.objects.filter(
@@ -142,11 +193,18 @@ def expire_order_suggestions(order_id: int, cycle: int) -> None:
             status=OrderDriverSuggestion.SuggestionStatus.SENT,
         )
         if not suggestions.exists():
+            logger.debug("Dispatch expiry: no active suggestions order=%s cycle=%s", order_id, cycle)
             return
 
         suggestions.update(
             status=OrderDriverSuggestion.SuggestionStatus.EXPIRED,
             responded_at=now,
+        )
+        logger.info(
+            "Dispatch expiry: expired suggestions order=%s cycle=%s count=%s",
+            order_id,
+            cycle,
+            suggestions.count(),
         )
 
         if order.status == OrderStatus.DRIVER_NOTIFICATION_SENT:

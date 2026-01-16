@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import (
+    ManualOrder,
     Order,
+    OrderDispatchState,
     OrderItem,
     ShippingPackage,
     OrderDriverSuggestion,
@@ -62,3 +64,16 @@ class OrderStatusHistoryAdmin(admin.ModelAdmin):
     list_filter = ("status", "timestamp")
     search_fields = ("order__id",)
     ordering = ("-timestamp",)
+
+@admin.register(OrderDispatchState)
+class OrderDispatchStateAdmin(admin.ModelAdmin):
+    list_display = ("order", "is_active", "cycle", "next_retry_at", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("order__id",)
+    ordering = ("-updated_at",)
+
+@admin.register(ManualOrder)
+class ManualOrderAdmin(admin.ModelAdmin):   
+    list_display = ("order", "staff_user", "created_at")
+    search_fields = ("order__id", "staff_user__email", "staff_user__phone")
+    ordering = ("-created_at",) 
