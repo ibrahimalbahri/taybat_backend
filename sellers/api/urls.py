@@ -63,11 +63,11 @@ urlpatterns = [
         SellerOrderDetailView.as_view(),
         name="seller-order-detail",
     ),
-    path(
-        "seller/orders/<int:pk>/accept/",
-        SellerOrderAcceptView.as_view(),
-        name="seller-order-accept",
-    ),
+    # path(
+    #     "seller/orders/<int:pk>/accept/",
+    #     SellerOrderAcceptView.as_view(),
+    #     name="seller-order-accept",
+    # ),
     path(
         "seller/orders/<int:pk>/status/",
         SellerOrderStatusUpdateView.as_view(),

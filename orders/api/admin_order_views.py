@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.permissions import IsAdmin
+from users.permissions import IsAdmin, IsDriver
 from orders.models import Order, OrderStatusHistory
 from orders.models_exports import Export
 from orders.api.serializers import OrderOutputSerializer, ExportResponseSerializer
@@ -37,7 +37,7 @@ class AdminOrderListView(generics.ListAPIView):
     GET /api/admin/orders/
     """
 
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdmin, IsDriver]
     serializer_class = OrderOutputSerializer
 
     @extend_schema(
@@ -57,6 +57,9 @@ class AdminOrderListView(generics.ListAPIView):
             "customer_id": self.request.query_params.get("customer_id"),
             "search": self.request.query_params.get("search"),
         }
+        user = get_authenticated_user(self.request)
+        if not getattr(user, "is_superuser", False) and user.has_role("driver"):
+            params["driver_id"] = user.id
         from_val = self.request.query_params.get("from")
         to_val = self.request.query_params.get("to")
         if from_val:
@@ -64,6 +67,29 @@ class AdminOrderListView(generics.ListAPIView):
         if to_val:
             params["to"] = parse_datetime(to_val)
 
+        return build_admin_order_queryset(params)
+
+
+class AdminOrderDetailView(generics.RetrieveAPIView):
+    """
+    GET /api/admin/orders/<id>/
+    """
+
+    permission_classes = [IsAuthenticated, IsAdmin, IsDriver]
+    serializer_class = OrderOutputSerializer
+
+    @extend_schema(
+        responses=OrderOutputSerializer,
+        description="Retrieve an order for admin users or a driver's own order.",
+    )
+    def get(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self) -> QuerySet[Order]:
+        user = get_authenticated_user(self.request)
+        params: dict[str, object] = {}
+        if not getattr(user, "is_superuser", False) and user.has_role("driver"):
+            params["driver_id"] = user.id
         return build_admin_order_queryset(params)
 
 

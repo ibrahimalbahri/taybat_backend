@@ -16,6 +16,7 @@ from orders.api.customer_service_checkout_views import (
 from orders.api.seller_manual_order_views import SellerManualOrderCreateView
 from orders.api.admin_order_views import (
     AdminOrderListView,
+    AdminOrderDetailView,
     AdminOrderExportExcelView,
     AdminOrderExportPdfView,
     AdminOrderStatusHistoryView,
@@ -65,21 +66,26 @@ urlpatterns = [
         SellerManualOrderCreateView.as_view(),
         name="seller-manual-order-create",
     ),
-    path(
-        "seller/orders/export/excel/",
-        SellerOrderExportExcelView.as_view(),
-        name="seller-orders-export-excel",
-    ),
-    path(
-        "seller/orders/export/pdf/",
-        SellerOrderExportPdfView.as_view(),
-        name="seller-orders-export-pdf",
-    ),
+    # path(
+    #     "seller/orders/export/excel/",
+    #     SellerOrderExportExcelView.as_view(),
+    #     name="seller-orders-export-excel",
+    # ),
+    # path(
+    #     "seller/orders/export/pdf/",
+    #     SellerOrderExportPdfView.as_view(),
+    #     name="seller-orders-export-pdf",
+    # ),
     # Admin order dashboard + exports
     path(
         "admin/orders/",
         AdminOrderListView.as_view(),
         name="admin-orders",
+    ),
+    path(
+        "admin/orders/<int:pk>/",
+        AdminOrderDetailView.as_view(),
+        name="admin-order-detail",
     ),
     path(
         "admin/orders/export/excel/",
