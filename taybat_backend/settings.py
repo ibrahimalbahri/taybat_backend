@@ -12,20 +12,21 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+import os
 try:
     from celery.schedules import schedule
 except ImportError:  # pragma: no cover - optional for non-celery environments
     schedule = None
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-import os
 # SECURITY WARNING: don't run with debug turned on in production!
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure")
@@ -235,7 +236,7 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 sentry_sdk.init(
-    dsn=os.environ["SENTRY_DSN"],
+    dsn=os.getenv("SENTRY_DSN"),
     integrations=[DjangoIntegration()],
     traces_sample_rate=0.1,  # start low
     send_default_pii=True,   # if you want user info
