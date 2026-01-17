@@ -55,13 +55,17 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     [
-                        html.Label("Custom range  "),
+                        html.Label("Custom range"),
                         dcc.DatePickerRange(
                             id="dash-date-picker",
                             display_format="YYYY-MM-DD",
+                            start_date_placeholder_text="Start date",
+                            end_date_placeholder_text="End date",
+                            style={"display": "flex", "gap": "8px"},
                         ),
                     ],
                     className="dash-filter",
+                    style={"display": "flex", "flexDirection": "column", "gap": "6px"},
                 ),
                 html.Div(
                     [
