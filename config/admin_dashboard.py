@@ -324,10 +324,32 @@ class StatsDashboardModule(modules.DashboardModule):
         ]
 
 
+class PlotlyDashboardModule(modules.DashboardModule):
+    title = "Interactive Analytics"
+    template = "admin_tools/dashboard/modules/taybat_dash.html"
+
+
 class CustomIndexDashboard(Dashboard):
     columns = 3
 
     def init_with_context(self, context) -> None:
+        self.children.append(
+            modules.LinkList(
+                "Dashboards",
+                children=[
+                    {
+                        "title": "Interactive Analytics",
+                        "url": "/django_plotly_dash/app/TaybatDash/",
+                        "external": False,
+                    }
+                ],
+            )
+        )
+
+        self.children.append(
+            PlotlyDashboardModule()
+        )
+
         self.children.append(StatsDashboardModule())
 
         self.children.append(

@@ -1,0 +1,23 @@
+{% load plotly_dash %}
+<style>
+  .taybat-dash .dash-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .taybat-dash .dash-filter label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .taybat-dash .dash-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+</style>
+<div class="taybat-dash" id="taybat-dash-panel">
+  {% plotly_app name="TaybatDash" %}
+</div>

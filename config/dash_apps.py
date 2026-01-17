@@ -1,0 +1,259 @@
+from __future__ import annotations
+
+from datetime import date, timedelta
+
+from dash import Input, Output, dcc, html
+from django.db.models import Count, DecimalField, Q, Sum
+from django.db.models.functions import Coalesce, TruncDate
+from django.utils import timezone
+from django_plotly_dash import DjangoDash
+
+from orders.models import Order, OrderStatus, OrderType
+from payments.models import Transaction, TransactionStatus, TransactionType
+
+
+def _parse_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+app = DjangoDash("TaybatDash")
+app.layout = html.Div(
+    [
+        html.Div(
+            [
+                html.Div(
+                    [
+                        html.Label("Date range"),
+                        dcc.Dropdown(
+                            id="dash-date-range",
+                            options=[
+                                {"label": "Today", "value": "today"},
+                                {"label": "Last 7 days", "value": "7d"},
+                                {"label": "Last 30 days", "value": "30d"},
+                                {"label": "Custom", "value": "custom"},
+                            ],
+                            value="7d",
+                            clearable=False,
+                        ),
+                    ],
+                    className="dash-filter",
+                ),
+                html.Div(
+                    [
+                        html.Label("Custom range"),
+                        dcc.DatePickerRange(
+                            id="dash-date-picker",
+                            display_format="YYYY-MM-DD",
+                        ),
+                    ],
+                    className="dash-filter",
+                ),
+                html.Div(
+                    [
+                        html.Label("Order type"),
+                        dcc.Dropdown(
+                            id="dash-order-type",
+                            options=[{"label": label, "value": value} for value, label in [('All', 'All')] + OrderType.choices],
+                            placeholder="All",
+                            clearable=True,
+                        ),
+                    ],
+                    className="dash-filter",
+                ),
+                html.Div(
+                    [
+                        html.Label("Order status"),
+                        dcc.Dropdown(
+                            id="dash-order-status",
+                            options=[{"label": label, "value": value} for value, label in [('All', 'All')] + OrderStatus.choices],
+                            placeholder="All",
+                            clearable=True,
+                        ),
+                    ],
+                    className="dash-filter",
+                ),
+            ],
+            style={
+                "display": "grid",
+                "gridTemplateColumns": "repeat(auto-fit, minmax(180px, 1fr))",
+                "gap": "12px",
+                "marginBottom": "12px",
+            },
+        ),
+        html.Div(
+            [
+                dcc.Graph(id="dash-order-status-chart"),
+                dcc.Graph(id="dash-order-type-chart"),
+            ],
+            style={
+                "display": "grid",
+                "gridTemplateColumns": "repeat(auto-fit, minmax(280px, 1fr))",
+                "gap": "12px",
+                "marginBottom": "12px",
+            },
+        ),
+        html.Div(
+            [
+                dcc.Graph(id="dash-revenue-chart"),
+                dcc.Graph(id="dash-payment-status-chart"),
+            ],
+            style={
+                "display": "grid",
+                "gridTemplateColumns": "repeat(auto-fit, minmax(280px, 1fr))",
+                "gap": "12px",
+                "marginBottom": "12px",
+            },
+        ),
+    ],
+    style={"padding": "8px 4px"},
+)
+
+
+@app.callback(
+    Output("dash-order-status-chart", "figure"),
+    Output("dash-order-type-chart", "figure"),
+    Output("dash-revenue-chart", "figure"),
+    Output("dash-payment-status-chart", "figure"),
+    Input("dash-date-range", "value"),
+    Input("dash-date-picker", "start_date"),
+    Input("dash-date-picker", "end_date"),
+    Input("dash-order-type", "value"),
+    Input("dash-order-status", "value"),
+)
+def update_charts(date_range, start_date, end_date, order_type, order_status):
+    now = timezone.localdate()
+    start_dt = None
+    end_dt = None
+
+    if date_range == "today":
+        start_dt = now
+    elif date_range == "30d":
+        start_dt = now - timedelta(days=30)
+    elif date_range == "custom":
+        start_dt = _parse_date(start_date)
+        end_dt = _parse_date(end_date)
+    else:
+        start_dt = now - timedelta(days=7)
+
+    order_qs = Order.objects.all()
+    if start_dt:
+        order_qs = order_qs.filter(created_at__date__gte=start_dt)
+    if end_dt:
+        order_qs = order_qs.filter(created_at__date__lte=end_dt)
+    if order_type and order_type != "All":
+        order_qs = order_qs.filter(order_type=order_type)
+    if order_status and order_status != "All":
+        order_qs = order_qs.filter(status=order_status)
+
+    status_counts = order_qs.aggregate(
+        pending=Count("id", filter=Q(status=OrderStatus.PENDING)),
+        searching=Count("id", filter=Q(status=OrderStatus.SEARCHING_FOR_DRIVER)),
+        on_the_way=Count("id", filter=Q(status=OrderStatus.ON_THE_WAY)),
+        completed=Count("id", filter=Q(status=OrderStatus.COMPLETED)),
+        cancelled=Count("id", filter=Q(status=OrderStatus.CANCELLED)),
+    )
+    status_chart = {
+        "data": [
+            {
+                "x": ["Pending", "Searching", "On the way", "Completed", "Cancelled"],
+                "y": [
+                    status_counts["pending"],
+                    status_counts["searching"],
+                    status_counts["on_the_way"],
+                    status_counts["completed"],
+                    status_counts["cancelled"],
+                ],
+                "type": "bar",
+                "marker": {"color": "#2b7cff"},
+            }
+        ],
+        "layout": {"title": "Orders by status", "height": 320, "margin": {"t": 40, "l": 40, "r": 20, "b": 40}},
+    }
+
+    type_counts = order_qs.aggregate(
+        food=Count("id", filter=Q(order_type=OrderType.FOOD)),
+        shipping=Count("id", filter=Q(order_type=OrderType.SHIPPING)),
+        taxi=Count("id", filter=Q(order_type=OrderType.TAXI)),
+    )
+    type_chart = {
+        "data": [
+            {
+                "labels": ["Food", "Shipping", "Taxi"],
+                "values": [type_counts["food"], type_counts["shipping"], type_counts["taxi"]],
+                "type": "pie",
+                "hole": 0.45,
+            }
+        ],
+        "layout": {"title": "Orders by type", "height": 320, "margin": {"t": 40, "l": 20, "r": 20, "b": 40}},
+    }
+
+    txn_qs = Transaction.objects.filter(
+        status=TransactionStatus.SUCCEEDED,
+        type__in=[TransactionType.PAYMENT, TransactionType.TIP, TransactionType.ADJUSTMENT],
+    )
+    if start_dt:
+        txn_qs = txn_qs.filter(created_at__date__gte=start_dt)
+    if end_dt:
+        txn_qs = txn_qs.filter(created_at__date__lte=end_dt)
+
+    revenue_by_day = {
+        row["day"]: row["total"]
+        for row in txn_qs.annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(total=Coalesce(Sum("amount"), 0, output_field=DecimalField(max_digits=10, decimal_places=2)))
+    }
+    if start_dt and end_dt:
+        series_start = start_dt
+        series_end = end_dt
+    else:
+        series_end = now
+        series_start = start_dt or (now - timedelta(days=7))
+
+    dates = []
+    totals = []
+    cursor = series_start
+    while cursor <= series_end:
+        dates.append(cursor.isoformat())
+        totals.append(float(revenue_by_day.get(cursor, 0)))
+        cursor += timedelta(days=1)
+
+    revenue_chart = {
+        "data": [{"x": dates, "y": totals, "type": "scatter", "mode": "lines+markers"}],
+        "layout": {"title": "Revenue by day", "height": 320, "margin": {"t": 40, "l": 40, "r": 20, "b": 40}},
+    }
+
+    txn_status_qs = Transaction.objects.all()
+    if start_dt:
+        txn_status_qs = txn_status_qs.filter(created_at__date__gte=start_dt)
+    if end_dt:
+        txn_status_qs = txn_status_qs.filter(created_at__date__lte=end_dt)
+
+    payment_status_counts = txn_status_qs.aggregate(
+        pending=Count("id", filter=Q(status=TransactionStatus.PENDING)),
+        succeeded=Count("id", filter=Q(status=TransactionStatus.SUCCEEDED)),
+        failed=Count("id", filter=Q(status=TransactionStatus.FAILED)),
+        cancelled=Count("id", filter=Q(status=TransactionStatus.CANCELLED)),
+    )
+    payment_status_chart = {
+        "data": [
+            {
+                "x": ["Succeeded", "Pending", "Failed", "Cancelled"],
+                "y": [
+                    payment_status_counts["succeeded"],
+                    payment_status_counts["pending"],
+                    payment_status_counts["failed"],
+                    payment_status_counts["cancelled"],
+                ],
+                "type": "bar",
+                "marker": {"color": "#f57c00"},
+            }
+        ],
+        "layout": {"title": "Payments by status", "height": 320, "margin": {"t": 40, "l": 40, "r": 20, "b": 40}},
+    }
+
+    return status_chart, type_chart, revenue_chart, payment_status_chart

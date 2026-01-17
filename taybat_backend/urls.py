@@ -21,6 +21,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 urlpatterns = [
     path("admin/", include("admin_tools.urls")),
     path("admin/", admin.site.urls),
+    path("django_plotly_dash/", include("django_plotly_dash.urls")),
     path("api/", include("users.api.urls")),
     path("api/", include("sellers.api.urls")),
     path("api/", include("orders.api.urls")),
