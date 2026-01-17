@@ -1,0 +1,19 @@
+{% if module.sections %}
+  {% for section in module.sections %}
+    <div class="taybat-stats-section">
+      <h3>{{ section.title }}</h3>
+      <table>
+        <tbody>
+          {% for stat in section.stats %}
+            <tr>
+              <th>{{ stat.label }}</th>
+              <td>{{ stat.value }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No stats available.</p>
+{% endif %}

@@ -3,6 +3,7 @@ attrs==25.4.0
 celery==5.4.0
 dj-database-url==3.0.1
 Django==4.2.27
+django-admin-tools==0.9.3
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
 djangorestframework-simplejwt==5.3.1
