@@ -2,13 +2,25 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from .models import CustomerProfile, SellerProfile, User, Address, DriverProfile
+from .models import CustomerProfile, SellerProfile, User, Address, DriverProfile, Role, UserRole, AdminProfile
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("email", "name", "roles_list", "is_verified", "is_staff", "created_at")
-    list_filter = ("roles", "is_verified", "is_staff")
+    list_display = (
+        "id",
+        "email",
+        "name",
+        "phone",
+        "age",
+        "roles_list",
+        "is_verified",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "created_at",
+    )
+    list_filter = ("roles", "is_verified", "is_active", "is_staff", "is_superuser")
     search_fields = ("email", "phone", "name")
     ordering = ("-created_at",)
 
@@ -19,20 +31,38 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
-    list_display = ("user", "label", "full_address", "created_at")
-    search_fields = ("full_address",)
-    list_filter = ("label",)
+    list_display = (
+        "id",
+        "user",
+        "label",
+        "lat",
+        "lng",
+        "full_address",
+        "street_name",
+        "house_number",
+        "city",
+        "postal_code",
+        "country",
+        "created_at",
+    )
+    search_fields = ("full_address", "street_name", "city", "postal_code", "country")
+    list_filter = ("label", "city", "country")
 
 
 @admin.register(DriverProfile)
 class DriverProfileAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "user",
         "status",
         "vehicle_type",
         "accepts_food",
         "accepts_shipping",
         "accepts_taxi",
+        "is_online",
+        "driving_license",
+        "id_document",
+        "other_documents",
         "earnings_last_month",
         "created_at",
     )
@@ -46,9 +76,11 @@ class DriverProfileAdmin(admin.ModelAdmin):
 @admin.register(SellerProfile)
 class SellerProfileAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "user",
         "total_sales",
         "created_at",
+        "updated_at",
     )
     search_fields = ("user__email", "store_name")
 
@@ -59,12 +91,33 @@ class SellerProfileAdmin(admin.ModelAdmin):
 @admin.register(CustomerProfile)
 class CustomerProfileAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "user",
         "total_orders",
         "created_at",
+        "updated_at",
     )
     search_fields = ("user__email",)
 
     @admin.display(description="Total Orders")
     def total_orders(self, obj: CustomerProfile) -> int:
         return obj.orders.count()
+
+
+@admin.register(AdminProfile)
+class AdminProfileAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "created_at", "updated_at")
+    search_fields = ("user__email", "user__phone")
+
+
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
+
+
+@admin.register(UserRole)
+class UserRoleAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "role", "created_at")
+    search_fields = ("user__email", "user__phone", "role__name")
+    list_filter = ("role",)

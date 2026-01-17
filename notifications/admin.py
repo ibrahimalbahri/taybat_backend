@@ -1,7 +1,6 @@
 from django.contrib import admin
+
 from .models import Notification, DeviceToken
-from django.utils.html import format_html
-from django.utils.timezone import localtime
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
@@ -9,10 +8,14 @@ class NotificationAdmin(admin.ModelAdmin):
         "id",
         "title",
         "recipient",
-        "is_read"
+        "body",
+        "data",
+        "is_read",
+        "read_at",
+        "created_at",
     )
     list_filter = ("is_read", "created_at", "recipient")
-    search_fields = ("title", "message", "recipient__email", "recipient__phone")
+    search_fields = ("title", "body", "recipient__email", "recipient__phone")
     ordering = ("-created_at",)
     
 @admin.register(DeviceToken)
@@ -22,7 +25,9 @@ class DeviceTokenAdmin(admin.ModelAdmin):
         "user",
         "token",
         "device_type",
-        "is_active"
+        "is_active",
+        "created_at",
+        "last_seen_at",
     )
     list_filter = ("is_active", "device_type", "created_at", "last_seen_at")
     search_fields = ("token", "user__email", "user__phone")

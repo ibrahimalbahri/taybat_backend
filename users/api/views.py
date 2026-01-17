@@ -14,6 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from orders.api.order_crud_views import _get_system_customer_for_seller
 from users.api.serializers import (
     BlacklistRefreshSerializer,
     OtpRequestSerializer,
@@ -463,6 +464,8 @@ class AddressListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self) -> QuerySet[Address]:
         user = get_authenticated_user(self.request)
+        if user.has_role("seller"):    
+            user = _get_system_customer_for_seller(user)
         return Address.objects.filter(user=user).order_by("-created_at")
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer]:
