@@ -14,6 +14,7 @@ from orders.api.customer_service_checkout_views import (
     ShippingCheckoutView,
 )
 from orders.api.seller_manual_order_views import SellerManualOrderCreateView
+from orders.api.order_crud_views import OrderListCreateView, OrderDetailView
 from orders.api.admin_order_views import (
     AdminOrderListView,
     AdminOrderDetailView,
@@ -61,11 +62,14 @@ urlpatterns = [
         name="customer-shipping-preview",
     ),
     # Seller-facing endpoints
-    path(
-        "seller/orders/manual/",
-        SellerManualOrderCreateView.as_view(),
-        name="seller-manual-order-create",
-    ),
+    # path(
+    #     "seller/orders/manual/",
+    #     SellerManualOrderCreateView.as_view(),
+    #     name="seller-manual-order-create",
+    # ),
+    # Authenticated user order CRUD
+    path("orders/", OrderListCreateView.as_view(), name="orders"),
+    path("orders/<int:pk>/", OrderDetailView.as_view(), name="order-detail"),
     # path(
     #     "seller/orders/export/excel/",
     #     SellerOrderExportExcelView.as_view(),

@@ -77,5 +77,7 @@ class SellerManualOrderCreateView(APIView):
             order=order,
             scanned_form_data=data["scanned_form_data"],
         )
+        order.is_manual = True
+        order.save(update_fields=["is_manual"])
 
         return Response(status=status.HTTP_201_CREATED)

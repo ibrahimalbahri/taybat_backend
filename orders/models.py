@@ -43,6 +43,8 @@ class Order(models.Model):
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="customer_orders",
     )
 
@@ -122,6 +124,7 @@ class Order(models.Model):
     )
     requested_vehicle_type = models.CharField(max_length=20, choices=VehicleType.choices, null=True, blank=True)
     requested_delivery_type = models.CharField(max_length=20, choices=VehicleType.choices, null=True, blank=True)
+    is_manual = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -55,9 +55,34 @@ class OrderOutputSerializer(serializers.ModelSerializer):
             "dropoff_address",
             "requested_vehicle_type",
             "requested_delivery_type",
+            "is_manual",
             "created_at",
             "items",
         ]
+
+
+class OrderCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "order_type",
+            "status",
+            "restaurant",
+            "coupon",
+            "subtotal_amount",
+            "discount_amount",
+            "delivery_fee",
+            "tip",
+            "total_amount",
+            "pickup_address",
+            "dropoff_address",
+            "requested_vehicle_type",
+            "requested_delivery_type",
+            "driver",
+            "is_manual",
+        ]
+        read_only_fields = ["id"]
 
 
 class ExportResponseSerializer(serializers.Serializer):
