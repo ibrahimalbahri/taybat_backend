@@ -257,12 +257,19 @@ LOYALTY_ONLY_FOOD = False
 LOYALTY_ISSUE_ON_STATUS = "COMPLETED"
 
 
+import logging
 import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
-    integrations=[DjangoIntegration()],
+    integrations=[
+        DjangoIntegration(),
+        CeleryIntegration(),
+        LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+    ],
     traces_sample_rate=0.1,  # start low
     send_default_pii=True,   # if you want user info
     environment=os.getenv("SENTRY_ENVIRONMENT", "development")
