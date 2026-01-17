@@ -131,8 +131,6 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                     "pickup_address or pickup_address_data and dropoff_address or dropoff_address_data are required."
                 )
             order_type = attrs.get("order_type")
-            if order_type == OrderType.FOOD and not attrs.get("items"):
-                raise serializers.ValidationError("items are required for FOOD orders.")
             if order_type != OrderType.FOOD and attrs.get("items"):
                 raise serializers.ValidationError("items are only allowed for FOOD orders.")
         if self.instance is not None:
