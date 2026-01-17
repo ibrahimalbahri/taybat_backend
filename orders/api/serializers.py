@@ -3,9 +3,10 @@ from __future__ import annotations
 from decimal import Decimal
 from rest_framework import serializers
 
-from sellers.models import Restaurant, Item
+from sellers.models import Restaurant, Item, Coupon
 from orders.models import Order, OrderItem
-from users.api.serializers import AddressCreateUpdateSerializer
+from users.api.serializers import AddressCreateUpdateSerializer, AddressSerializer, DriverProfileSerializer
+from users.models import User
 
 
 class CartItemInputSerializer(serializers.Serializer):
@@ -38,6 +39,11 @@ class OrderItemOutputSerializer(serializers.ModelSerializer):
 
 class OrderOutputSerializer(serializers.ModelSerializer):
     items = OrderItemOutputSerializer(many=True, read_only=True)
+    restaurant = serializers.SerializerMethodField()
+    coupon = serializers.SerializerMethodField()
+    pickup_address = AddressSerializer(read_only=True)
+    dropoff_address = AddressSerializer(read_only=True)
+    driver = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -56,10 +62,29 @@ class OrderOutputSerializer(serializers.ModelSerializer):
             "dropoff_address",
             "requested_vehicle_type",
             "requested_delivery_type",
+            "driver",
             "is_manual",
             "created_at",
             "items",
         ]
+
+    def get_restaurant(self, obj: Order) -> dict[str, object] | None:
+        restaurant = obj.restaurant
+        if restaurant is None:
+            return None
+        return OrderRestaurantSerializer(restaurant).data
+
+    def get_coupon(self, obj: Order) -> dict[str, object] | None:
+        coupon = obj.coupon
+        if coupon is None:
+            return None
+        return OrderCouponSerializer(coupon).data
+
+    def get_driver(self, obj: Order) -> dict[str, object] | None:
+        driver = obj.driver
+        if driver is None:
+            return None
+        return OrderDriverSerializer(driver).data
 
 
 class OrderCreateUpdateSerializer(serializers.ModelSerializer):
@@ -108,3 +133,51 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
 class ExportResponseSerializer(serializers.Serializer):
     export_id = serializers.IntegerField()
     file_path = serializers.CharField()
+
+
+class OrderRestaurantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Restaurant
+        fields = ["id", "name", "logo", "address", "lat", "lng", "phone", "status", "created_at"]
+
+
+class OrderCouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = [
+            "id",
+            "restaurant",
+            "title",
+            "description",
+            "code",
+            "percentage",
+            "min_price",
+            "max_total_users",
+            "max_per_customer",
+            "start_date",
+            "end_date",
+            "is_active",
+            "created_at",
+        ]
+
+
+class OrderDriverSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
+    driver_profile = DriverProfileSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "name",
+            "phone",
+            "age",
+            "is_verified",
+            "created_at",
+            "roles",
+            "driver_profile",
+        ]
+
+    def get_roles(self, obj: User) -> list[str]:
+        return list(obj.roles.values_list("name", flat=True))
