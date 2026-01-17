@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from sellers.models import Restaurant, Item
 from orders.models import Order, OrderItem
+from users.api.serializers import AddressCreateUpdateSerializer
 
 
 class CartItemInputSerializer(serializers.Serializer):
@@ -62,6 +63,9 @@ class OrderOutputSerializer(serializers.ModelSerializer):
 
 
 class OrderCreateUpdateSerializer(serializers.ModelSerializer):
+    pickup_address_data = AddressCreateUpdateSerializer(write_only=True, required=False)
+    dropoff_address_data = AddressCreateUpdateSerializer(write_only=True, required=False)
+
     class Meta:
         model = Order
         fields = [
@@ -81,8 +85,24 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
             "requested_delivery_type",
             "driver",
             "is_manual",
+            "pickup_address_data",
+            "dropoff_address_data",
         ]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "pickup_address": {"required": False, "allow_null": True},
+            "dropoff_address": {"required": False, "allow_null": True},
+        }
+
+    def validate(self, attrs: dict[str, object]) -> dict[str, object]:
+        if self.instance is None:
+            has_pickup = attrs.get("pickup_address") or attrs.get("pickup_address_data")
+            has_dropoff = attrs.get("dropoff_address") or attrs.get("dropoff_address_data")
+            if not has_pickup or not has_dropoff:
+                raise serializers.ValidationError(
+                    "pickup_address or pickup_address_data and dropoff_address or dropoff_address_data are required."
+                )
+        return attrs
 
 
 class ExportResponseSerializer(serializers.Serializer):
