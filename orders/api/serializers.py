@@ -119,6 +119,7 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "pickup_address": {"required": False, "allow_null": True},
             "dropoff_address": {"required": False, "allow_null": True},
+            "items": {"required": False, "allow_null": True},
         }
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
