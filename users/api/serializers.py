@@ -146,6 +146,7 @@ class AddressCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = [
+            "id",
             "label",
             "lat",
             "lng",
