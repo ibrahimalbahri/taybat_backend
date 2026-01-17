@@ -4,7 +4,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from sellers.models import Restaurant, Item, Coupon
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, OrderType
 from users.api.serializers import AddressCreateUpdateSerializer, AddressSerializer, DriverProfileSerializer
 from users.models import User
 
@@ -90,6 +90,7 @@ class OrderOutputSerializer(serializers.ModelSerializer):
 class OrderCreateUpdateSerializer(serializers.ModelSerializer):
     pickup_address_data = AddressCreateUpdateSerializer(write_only=True, required=False)
     dropoff_address_data = AddressCreateUpdateSerializer(write_only=True, required=False)
+    items = CartItemInputSerializer(many=True, write_only=True, required=False)
 
     class Meta:
         model = Order
@@ -112,6 +113,7 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
             "is_manual",
             "pickup_address_data",
             "dropoff_address_data",
+            "items",
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
@@ -127,6 +129,15 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "pickup_address or pickup_address_data and dropoff_address or dropoff_address_data are required."
                 )
+            order_type = attrs.get("order_type")
+            if order_type == OrderType.FOOD and not attrs.get("items"):
+                raise serializers.ValidationError("items are required for FOOD orders.")
+            if order_type != OrderType.FOOD and attrs.get("items"):
+                raise serializers.ValidationError("items are only allowed for FOOD orders.")
+        if self.instance is not None:
+            order_type = attrs.get("order_type", self.instance.order_type)
+            if order_type != OrderType.FOOD and attrs.get("items"):
+                raise serializers.ValidationError("items are only allowed for FOOD orders.")
         return attrs
 
 
