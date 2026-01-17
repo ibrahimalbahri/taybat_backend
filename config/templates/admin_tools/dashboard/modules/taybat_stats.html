@@ -1,3 +1,153 @@
+<style>
+  .taybat-stats-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .taybat-stats-filters label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .taybat-stats-filters input,
+  .taybat-stats-filters select {
+    width: 100%;
+  }
+  .taybat-stats-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .taybat-chart {
+    margin: 12px 0 18px;
+  }
+  .taybat-chart-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px;
+    gap: 8px;
+    align-items: center;
+    margin: 6px 0;
+  }
+  .taybat-chart-bar {
+    height: 10px;
+    background: #e1e5eb;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .taybat-chart-bar > span {
+    display: block;
+    height: 100%;
+    background: #2b7cff;
+    border-radius: 999px;
+  }
+  .taybat-stats-section {
+    margin-bottom: 18px;
+  }
+</style>
+
+<form method="get" class="taybat-stats-filters">
+  <div>
+    <label for="date_range">Date range</label>
+    <select id="date_range" name="date_range">
+      <option value="today" {% if module.filters.date_range == "today" %}selected{% endif %}>Today</option>
+      <option value="7d" {% if module.filters.date_range == "7d" %}selected{% endif %}>Last 7 days</option>
+      <option value="30d" {% if module.filters.date_range == "30d" %}selected{% endif %}>Last 30 days</option>
+      <option value="custom" {% if module.filters.date_range == "custom" %}selected{% endif %}>Custom</option>
+    </select>
+  </div>
+  <div>
+    <label for="start_date">Start date (YYYY-MM-DD)</label>
+    <input id="start_date" type="date" name="start_date" value="{{ module.filters.start_date }}">
+  </div>
+  <div>
+    <label for="end_date">End date (YYYY-MM-DD)</label>
+    <input id="end_date" type="date" name="end_date" value="{{ module.filters.end_date }}">
+  </div>
+  <div>
+    <label for="order_type">Order type</label>
+    <select id="order_type" name="order_type">
+      <option value="">All</option>
+      {% for value,label in module.filter_options.order_types %}
+        <option value="{{ value }}" {% if module.filters.order_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="order_status">Order status</label>
+    <select id="order_status" name="order_status">
+      <option value="">All</option>
+      {% for value,label in module.filter_options.order_statuses %}
+        <option value="{{ value }}" {% if module.filters.order_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="restaurant">Restaurant</label>
+    <select id="restaurant" name="restaurant">
+      <option value="">All</option>
+      {% for restaurant in module.filter_options.restaurants %}
+        <option value="{{ restaurant.id }}" {% if module.filters.restaurant == restaurant.id|stringformat:"s" %}selected{% endif %}>{{ restaurant.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="payment_status">Payment status</label>
+    <select id="payment_status" name="payment_status">
+      <option value="">All</option>
+      {% for value,label in module.filter_options.payment_statuses %}
+        <option value="{{ value }}" {% if module.filters.payment_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="payment_type">Payment type</label>
+    <select id="payment_type" name="payment_type">
+      <option value="">All</option>
+      {% for value,label in module.filter_options.payment_types %}
+        <option value="{{ value }}" {% if module.filters.payment_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="taybat-stats-actions">
+    <button type="submit" class="button">Apply</button>
+    <a class="button" href="?">Reset</a>
+  </div>
+</form>
+
+<div class="taybat-chart">
+  <h3>Orders by status</h3>
+  {% for row in module.charts.order_status.rows %}
+    <div class="taybat-chart-row">
+      <div>{{ row.label }}</div>
+      <div class="taybat-chart-bar"><span style="width: {{ row.percent }}%"></span></div>
+      <div>{{ row.value }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="taybat-chart">
+  <h3>Orders by type</h3>
+  {% for row in module.charts.order_type.rows %}
+    <div class="taybat-chart-row">
+      <div>{{ row.label }}</div>
+      <div class="taybat-chart-bar"><span style="width: {{ row.percent }}%"></span></div>
+      <div>{{ row.value }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="taybat-chart">
+  <h3>Payments by status</h3>
+  {% for row in module.charts.payment_status.rows %}
+    <div class="taybat-chart-row">
+      <div>{{ row.label }}</div>
+      <div class="taybat-chart-bar"><span style="width: {{ row.percent }}%"></span></div>
+      <div>{{ row.value }}</div>
+    </div>
+  {% endfor %}
+</div>
+
 {% if module.sections %}
   {% for section in module.sections %}
     <div class="taybat-stats-section">
