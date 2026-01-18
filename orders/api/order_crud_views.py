@@ -99,6 +99,14 @@ class OrderListCreateView(generics.ListCreateAPIView):
         user = get_authenticated_user(self.request)
         if user.has_role("seller"):
             user = _get_system_customer_for_seller(user)
+        if user.has_role("driver"):
+            return (
+                Order.objects.filter(driver=user)
+                .select_related("restaurant", "coupon", "pickup_address", "dropoff_address", "driver")
+                .prefetch_related("items__item")
+                .order_by("-created_at")
+            )
+            
         return (
             Order.objects.filter(customer=user)
             .select_related("restaurant", "coupon", "pickup_address", "dropoff_address", "driver")
