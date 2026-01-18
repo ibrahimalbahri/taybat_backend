@@ -158,7 +158,6 @@ class DriverSuggestedOrdersView(generics.ListAPIView):
     def get_queryset(self) -> QuerySet[Order]:
         driver = get_authenticated_user(self.request)
         now = timezone.now()
-        now = timezone.now()
         
         # Get driver profile to check acceptance types
         try:

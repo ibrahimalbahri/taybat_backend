@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
 from orders.models import Order, OrderStatus
+from users.api.serializers import AddressSerializer
 from users.models import VehicleType, User
 
 
@@ -30,8 +31,8 @@ class SuggestedOrderSerializer(serializers.ModelSerializer):
     """Serializer for suggested orders list."""
     restaurant_name = serializers.CharField(source="restaurant.name", read_only=True, allow_null=True)
     customer_name = serializers.CharField(source="customer.name", read_only=True)
-    pickup_address = serializers.CharField(source="pickup_address.full_address", read_only=True)
-    dropoff_address = serializers.CharField(source="dropoff_address.full_address", read_only=True)
+    pickup_address = AddressSerializer(read_only=True)
+    dropoff_address = AddressSerializer(read_only=True)
     distance = serializers.SerializerMethodField()
     
     class Meta:
