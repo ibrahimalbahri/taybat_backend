@@ -248,7 +248,7 @@ class DriverAcceptOrderView(APIView):
         order_id = serializer.validated_data["order_id"]
 
         driver = get_authenticated_user(request)
-
+        now = timezone.now()
         # Lock the order row to prevent concurrent acceptance
         try:
             order = Order.objects.select_for_update().get(

@@ -79,7 +79,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(source="user.phone", read_only=True)
     age = serializers.IntegerField(source="user.age", read_only=True)
     roles = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = DriverProfile
         fields = [
