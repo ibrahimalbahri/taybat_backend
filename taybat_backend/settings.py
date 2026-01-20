@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'payments',
     'loyalty',
     'notifications',
+    'support',
     'config',
     # Third-party apps
     "drf_spectacular",

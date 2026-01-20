@@ -1,0 +1,80 @@
+from django.urls import path
+
+from support.api.views import (
+    AdminSupportMessageCreateView,
+    AdminSupportTicketDetailUpdateView,
+    AdminSupportTicketListView,
+    CustomerSupportMessageCreateView,
+    CustomerSupportTicketDetailView,
+    CustomerSupportTicketListCreateView,
+    DriverSupportMessageCreateView,
+    DriverSupportTicketDetailView,
+    DriverSupportTicketListCreateView,
+    SellerSupportMessageCreateView,
+    SellerSupportTicketDetailView,
+    SellerSupportTicketListCreateView,
+)
+
+
+urlpatterns = [
+    path(
+        "customer/support/tickets/",
+        CustomerSupportTicketListCreateView.as_view(),
+        name="customer-support-tickets",
+    ),
+    path(
+        "customer/support/tickets/<int:pk>/",
+        CustomerSupportTicketDetailView.as_view(),
+        name="customer-support-ticket-detail",
+    ),
+    path(
+        "customer/support/tickets/<int:pk>/messages/",
+        CustomerSupportMessageCreateView.as_view(),
+        name="customer-support-ticket-message",
+    ),
+    path(
+        "seller/support/tickets/",
+        SellerSupportTicketListCreateView.as_view(),
+        name="seller-support-tickets",
+    ),
+    path(
+        "seller/support/tickets/<int:pk>/",
+        SellerSupportTicketDetailView.as_view(),
+        name="seller-support-ticket-detail",
+    ),
+    path(
+        "seller/support/tickets/<int:pk>/messages/",
+        SellerSupportMessageCreateView.as_view(),
+        name="seller-support-ticket-message",
+    ),
+    path(
+        "driver/support/tickets/",
+        DriverSupportTicketListCreateView.as_view(),
+        name="driver-support-tickets",
+    ),
+    path(
+        "driver/support/tickets/<int:pk>/",
+        DriverSupportTicketDetailView.as_view(),
+        name="driver-support-ticket-detail",
+    ),
+    path(
+        "driver/support/tickets/<int:pk>/messages/",
+        DriverSupportMessageCreateView.as_view(),
+        name="driver-support-ticket-message",
+    ),
+    path(
+        "admin/support/tickets/",
+        AdminSupportTicketListView.as_view(),
+        name="admin-support-tickets",
+    ),
+    path(
+        "admin/support/tickets/<int:pk>/",
+        AdminSupportTicketDetailUpdateView.as_view(),
+        name="admin-support-ticket-detail",
+    ),
+    path(
+        "admin/support/tickets/<int:pk>/messages/",
+        AdminSupportMessageCreateView.as_view(),
+        name="admin-support-ticket-message",
+    ),
+]
