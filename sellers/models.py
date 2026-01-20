@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from django.db import models
 from django.conf import settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from django.db.models.manager import RelatedManager
+
+    from orders.models import Order, OrderItem
 
 
 class RestaurantStatus(models.TextChoices):
@@ -38,6 +44,12 @@ class Restaurant(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    if TYPE_CHECKING:
+        categories: RelatedManager["Category"]
+        items: RelatedManager["Item"]
+        coupons: RelatedManager["Coupon"]
+        orders: RelatedManager["Order"]
+
     class Meta:
         verbose_name = "Restaurant"
         verbose_name_plural = "Restaurants"
@@ -55,6 +67,9 @@ class Category(models.Model):
 
     name = models.CharField(max_length=100)
     view_order = models.PositiveIntegerField(default=0)
+
+    if TYPE_CHECKING:
+        items: RelatedManager["Item"]
 
     class Meta:
         verbose_name = "Category"
@@ -95,6 +110,9 @@ class Item(models.Model):
     is_available = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    if TYPE_CHECKING:
+        order_items: RelatedManager["OrderItem"]
 
     class Meta:
         verbose_name = "Item"
@@ -141,6 +159,10 @@ class Coupon(models.Model):
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    if TYPE_CHECKING:
+        usages: RelatedManager["CouponUsage"]
+        orders: RelatedManager["Order"]
 
     class Meta:
         verbose_name = "Coupon"

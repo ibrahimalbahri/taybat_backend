@@ -1,14 +1,29 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
+if TYPE_CHECKING:
+    from django.db.models.manager import RelatedManager
+
+    from drivers.models import DriverLocation, DriverVerification
+    from loyalty.models import LoyaltyPoint
+    from notifications.models import DeviceToken, Notification
+    from orders.models import ManualOrder, Order, OrderDriverSuggestion
+    from orders.models_exports import Export
+    from payments.models import PaymentMethod, Transaction
+    from sellers.models import CouponUsage, Restaurant
+
 
 class Role(models.Model):
     name = models.CharField(max_length=32, unique=True, db_index=True)
+
+    if TYPE_CHECKING:
+        role_users: RelatedManager["UserRole"]
+        users: RelatedManager["User"]
 
     class Meta:
         verbose_name = "Role"
@@ -146,6 +161,30 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = ["name"]
+
+    if TYPE_CHECKING:
+        user_roles: RelatedManager["UserRole"]
+        customer_profile: "CustomerProfile"
+        driver_profile: "DriverProfile"
+        seller_profile: "SellerProfile"
+        admin_profile: "AdminProfile"
+        addresses: RelatedManager["Address"]
+        customer_orders: RelatedManager["Order"]
+        driver_orders: RelatedManager["Order"]
+        order_suggestions: RelatedManager["OrderDriverSuggestion"]
+        manual_orders: RelatedManager["ManualOrder"]
+        exports: RelatedManager["Export"]
+        owned_restaurants: RelatedManager["Restaurant"]
+        coupon_usages: RelatedManager["CouponUsage"]
+        payment_methods: RelatedManager["PaymentMethod"]
+        transactions: RelatedManager["Transaction"]
+        driver_verifications: RelatedManager["DriverVerification"]
+        verification_events: RelatedManager["DriverVerification"]
+        driver_location: "DriverLocation"
+        device_tokens: RelatedManager["DeviceToken"]
+        notifications: RelatedManager["Notification"]
+        loyalty_points: RelatedManager["LoyaltyPoint"]
+        loyalty_created: RelatedManager["LoyaltyPoint"]
 
     class Meta:
         verbose_name = "User"
@@ -368,6 +407,10 @@ class Address(models.Model):
         on_delete=models.CASCADE,
         related_name="addresses",
     )
+
+    if TYPE_CHECKING:
+        pickup_orders: RelatedManager["Order"]
+        dropoff_orders: RelatedManager["Order"]
 
     label = models.CharField(
         max_length=50,

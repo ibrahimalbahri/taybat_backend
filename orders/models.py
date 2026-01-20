@@ -2,6 +2,14 @@ from __future__ import annotations
 
 from django.db import models
 from django.conf import settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from django.db.models.manager import RelatedManager
+
+    from loyalty.models import LoyaltyPoint
+    from payments.models import Transaction
+    from sellers.models import CouponUsage
 
 
 class OrderType(models.TextChoices):
@@ -127,6 +135,17 @@ class Order(models.Model):
     is_manual = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    if TYPE_CHECKING:
+        items: RelatedManager["OrderItem"]
+        shipping_package: "ShippingPackage"
+        driver_suggestions: RelatedManager["OrderDriverSuggestion"]
+        dispatch_state: "OrderDispatchState"
+        status_history: RelatedManager["OrderStatusHistory"]
+        manual_order_record: "ManualOrder"
+        transactions: RelatedManager["Transaction"]
+        coupon_usages: RelatedManager["CouponUsage"]
+        loyalty_points: RelatedManager["LoyaltyPoint"]
 
     class Meta:
         verbose_name = "Order"
