@@ -1,8 +1,31 @@
 services:
   - type: web
-    name: taybat-backend
+    name: taybat-backend-dev
     env: python
     plan: free
+    branch: dev
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn taybat_backend.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: taybat_backend.settings
+      - key: DEBUG
+        value: "1"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taybat-db-dev
+          property: connectionString
+
+  - type: web
+    name: taybat-backend-prod
+    env: python
+    plan: free
+    branch: main
     buildCommand: |
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
@@ -17,9 +40,11 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: taybat-db
+          name: taybat-db-prod
           property: connectionString
 
 databases:
-  - name: taybat-db
+  - name: taybat-db-dev
+    plan: free
+  - name: taybat-db-prod
     plan: free
