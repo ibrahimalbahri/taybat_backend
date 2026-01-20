@@ -48,20 +48,22 @@ class UserRole(models.Model):
 
 class UserManager(BaseUserManager["User"]):
     """
-    Custom user manager that uses email as the unique identifier.
+    Custom user manager that uses phone as the unique identifier.
     """
 
     def create_user(
         self,
-        email: str,
+        phone: str,
         password: Optional[str] = None,
+        email: Optional[str] = None,
         **extra_fields: object,
     ) -> "User":
-        if not email:
-            raise ValueError("The Email field must be set")
+        if not phone:
+            raise ValueError("The Phone field must be set")
 
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        if email:
+            email = self.normalize_email(email)
+        user = self.model(phone=phone, email=email, **extra_fields)
         # Password handling is kept minimal; full auth logic can be added later.
         if password:
             user.set_password(password)
@@ -72,18 +74,20 @@ class UserManager(BaseUserManager["User"]):
 
     def get_or_create_user(
         self,
-        email: str,
+        phone: str,
         password: Optional[str] = None,
+        email: Optional[str] = None,
         **extra_fields: object,
     ) -> Tuple["User", bool]:
-        if not email:
-            raise ValueError("The Email field must be set")
+        if not phone:
+            raise ValueError("The Phone field must be set")
 
-        email = self.normalize_email(email)
         try:
-            return self.get(email=email), False
+            return self.get(phone=phone), False
         except self.model.DoesNotExist:
-            user = self.model(email=email, **extra_fields)
+            if email:
+                email = self.normalize_email(email)
+            user = self.model(phone=phone, email=email, **extra_fields)
             if password:
                 user.set_password(password)
             else:
@@ -93,8 +97,9 @@ class UserManager(BaseUserManager["User"]):
 
     def create_superuser(
         self,
-        email: str,
+        phone: str,
         password: Optional[str] = None,
+        email: Optional[str] = None,
         **extra_fields: object,
     ) -> "User":
         extra_fields.setdefault("is_staff", True)
@@ -105,7 +110,7 @@ class UserManager(BaseUserManager["User"]):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        user = self.create_user(email, password, **extra_fields)
+        user = self.create_user(phone, password, email=email, **extra_fields)
         user.add_role("admin")
         AdminProfile.objects.get_or_create(user=user)
         return user
@@ -120,7 +125,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     name = models.CharField(max_length=255)
     age = models.PositiveIntegerField(null=True, blank=True)
-    email = models.EmailField(unique=True, db_index=True)
+    email = models.EmailField(unique=True, db_index=True, null=True, blank=True)
     phone = models.CharField(max_length=20, unique=True, db_index=True) # TODO: Add phone number validation + format validation
     otp_code_hash = models.CharField(max_length=128, null=True, blank=True)
     otp_code_created_at = models.DateTimeField(null=True, blank=True)
@@ -139,7 +144,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = ["name"]
 
     class Meta:
@@ -147,7 +152,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "Users"
 
     def __str__(self) -> str:
-        return f"{self.name} <{self.email}>"
+        if self.email:
+            return f"{self.name} <{self.phone}, {self.email}>"
+        return f"{self.name} <{self.phone}>"
 
     def has_role(self, name: str) -> bool:
         return self.roles.filter(name=name.lower()).exists()
@@ -178,6 +185,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin_role(self) -> bool:
         return self.has_role("admin")
+
+
+class OtpRequest(models.Model):
+    phone = models.CharField(max_length=20, unique=True, db_index=True)
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "OTP Request"
+        verbose_name_plural = "OTP Requests"
+
+    def __str__(self) -> str:
+        return f"OtpRequest(phone={self.phone})"
 
 
 class DriverStatus(models.TextChoices):
@@ -283,7 +303,7 @@ class DriverProfile(models.Model):
         return total or Decimal("0")
 
     def __str__(self) -> str:
-        return f"DriverProfile({self.user.email})"
+        return f"DriverProfile({self.user.phone})"
 
 
 class CustomerProfile(models.Model):

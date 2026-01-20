@@ -74,7 +74,7 @@ class BasicProfileResponseSerializer(serializers.Serializer):
 
 class DriverProfileSerializer(serializers.ModelSerializer):
     """Serializer for driver profile details."""
-    email = serializers.EmailField(source="user.email", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
     name = serializers.CharField(source="user.name", read_only=True)
     phone = serializers.CharField(source="user.phone", read_only=True)
     age = serializers.IntegerField(source="user.age", read_only=True)

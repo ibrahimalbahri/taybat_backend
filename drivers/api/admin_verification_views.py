@@ -25,7 +25,7 @@ class AdminDriverProfileSerializer(serializers.ModelSerializer):
     Admin view of driver profile in verification queue.
     """
 
-    email = serializers.EmailField(source="user.email", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
     name = serializers.CharField(source="user.name", read_only=True)
 
     class Meta:
@@ -47,7 +47,7 @@ class AdminDriverProfileSerializer(serializers.ModelSerializer):
 
 
 class AdminDriverVerificationSerializer(serializers.ModelSerializer):
-    admin_email = serializers.EmailField(source="admin.email", read_only=True)
+    admin_email = serializers.EmailField(source="admin.email", read_only=True, allow_null=True)
 
     class Meta:
         model = DriverVerification

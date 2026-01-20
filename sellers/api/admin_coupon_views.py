@@ -154,7 +154,7 @@ class AdminCouponEnableView(AdminCouponToggleView):
 
 
 class AdminCouponUsageSerializer(serializers.ModelSerializer):
-    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
     order_id = serializers.IntegerField(source="order.id", read_only=True)
 
     class Meta:

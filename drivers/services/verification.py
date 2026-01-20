@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist
-
 from drivers.models import DriverVerification, DriverVerificationStatus
 from users.models import DriverProfile, DriverStatus
 from users.models import User

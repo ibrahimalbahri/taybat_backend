@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from .models import CustomerProfile, SellerProfile, User, Address, DriverProfile, Role, UserRole, AdminProfile
+from .models import CustomerProfile, OtpRequest, SellerProfile, User, Address, DriverProfile, Role, UserRole, AdminProfile
 
 
 @admin.register(User)
@@ -121,3 +121,9 @@ class UserRoleAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "role", "created_at")
     search_fields = ("user__email", "user__phone", "role__name")
     list_filter = ("role",)
+
+@admin.register(OtpRequest)
+class OtpRequestAdmin(admin.ModelAdmin):
+    list_display = ('phone', 'code_hash', 'created_at')
+    search_fields = ('phone', 'code_hash', 'created_at')
+    list_filter = ('phone',)

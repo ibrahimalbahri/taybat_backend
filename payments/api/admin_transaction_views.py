@@ -20,7 +20,7 @@ class AdminTransactionFilterSerializer(serializers.Serializer):
 
 
 class AdminTransactionSerializer(serializers.ModelSerializer):
-    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
 
     class Meta:
         model = Transaction
@@ -61,4 +61,3 @@ class AdminTransactionListView(generics.ListAPIView):
         if to_val:
             qs = qs.filter(created_at__lte=to_val)
         return qs.order_by("-created_at")
-
