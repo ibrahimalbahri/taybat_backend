@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from django.db import transaction
 from django.db.models import Sum, F, QuerySet
+from django.db.models.deletion import ProtectedError
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, status
 from rest_framework import serializers as drf_serializers
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -228,11 +229,18 @@ class SellerCategoryListCreateView(generics.ListCreateAPIView):
     def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().post(request, *args, **kwargs)
 
+    def get_permissions(self) -> list[object]:
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [permission() for permission in self.permission_classes]
+
     def _get_restaurant(self) -> Restaurant | None:
         restaurant_id = self.request.query_params.get("restaurant_id")
         if not restaurant_id:
             return None
         try:
+            if self.request.method == "GET":
+                return Restaurant.objects.get(id=restaurant_id)
             user = get_authenticated_user(self.request)
             return Restaurant.objects.get(id=restaurant_id, owner_user=user)
         except Restaurant.DoesNotExist:
@@ -259,7 +267,14 @@ class SellerCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerCategorySerializer
 
+    def get_permissions(self) -> list[object]:
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [permission() for permission in self.permission_classes]
+
     def get_queryset(self) -> QuerySet[Category]:
+        if self.request.method == "GET":
+            return Category.objects.all()
         user = get_authenticated_user(self.request)
         return Category.objects.filter(restaurant__owner_user=user)
 
@@ -302,11 +317,21 @@ class SellerItemListCreateView(generics.ListCreateAPIView):
     def post(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().post(request, *args, **kwargs)
 
+    def get_permissions(self) -> list[object]:
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [permission() for permission in self.permission_classes]
+
     def _get_restaurant(self) -> Restaurant | None:
-        # restaurant_id = self.request.query_params.get("restaurant_id")
-        # if not restaurant_id:
-        #     return None
         try:
+            restaurant_id = self.request.query_params.get("restaurant_id")
+            if restaurant_id:
+                if self.request.method == "GET":
+                    return Restaurant.objects.get(id=restaurant_id)
+                user = get_authenticated_user(self.request)
+                return Restaurant.objects.get(id=restaurant_id, owner_user=user)
+            if self.request.method == "GET":
+                return None
             user = get_authenticated_user(self.request)
             return Restaurant.objects.get(owner_user=user)
         except Restaurant.DoesNotExist:
@@ -340,7 +365,37 @@ class SellerItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerItemSerializer
 
+    def get_permissions(self) -> list[object]:
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [permission() for permission in self.permission_classes]
+
+    @extend_schema(
+        responses={
+            204: None,
+            409: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
+        description="Delete an item owned by the seller.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        item = self.get_object()
+        if item.order_items.exists():
+            return Response(
+                {"detail": "Item cannot be deleted because it is referenced by orders."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        try:
+            item.delete()
+        except ProtectedError:
+            return Response(
+                {"detail": "Item cannot be deleted because it is referenced by orders."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_queryset(self) -> QuerySet[Item]:
+        if self.request.method == "GET":
+            return Item.objects.all()
         user = get_authenticated_user(self.request)
         return Item.objects.filter(restaurant__owner_user=user)
 
