@@ -267,6 +267,29 @@ class SellerCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsSeller]
     serializer_class = SellerCategorySerializer
 
+    @extend_schema(
+        responses={
+            204: None,
+            409: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
+        description="Delete a category owned by the seller.",
+    )
+    def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
+        category = self.get_object()
+        if category.items.exists():
+            return Response(
+                {"detail": "Category cannot be deleted because it contains items."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        try:
+            category.delete()
+        except ProtectedError:
+            return Response(
+                {"detail": "Category cannot be deleted because it is in use."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_permissions(self) -> list[object]:
         if self.request.method == "GET":
             return [AllowAny()]
@@ -530,11 +553,31 @@ class SellerRestaurantDetailView(generics.RetrieveUpdateDestroyAPIView):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        responses={204: None},
+        responses={
+            204: None,
+            409: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        },
         description="Delete a restaurant owned by the seller.",
     )
     def delete(self, request: Request, *args: object, **kwargs: object) -> Response:
-        return super().delete(request, *args, **kwargs)
+        restaurant = self.get_object()
+        if restaurant.items.filter(order_items__isnull=False).exists():
+            return Response(
+                {
+                    "detail": (
+                        "Restaurant cannot be deleted because its items are referenced by orders."
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        try:
+            restaurant.delete()
+        except ProtectedError:
+            return Response(
+                {"detail": "Restaurant cannot be deleted because it is in use."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self) -> QuerySet[Restaurant]:
         user = get_authenticated_user(self.request)
